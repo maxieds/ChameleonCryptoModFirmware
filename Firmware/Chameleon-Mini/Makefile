@@ -20,13 +20,13 @@ SETTINGS	+= -DSUPPORT_MF_CLASSIC_MAGIC_MODE
 SETTINGS	+= -DSUPPORT_UID7_FIX_MANUFACTURER_BYTE
 
 #Support activating firmware upgrade mode through command-line
-SETTINGS	+= -DSUPPORT_FIRMWARE_UPGRADE
+#SETTINGS	+= -DSUPPORT_FIRMWARE_UPGRADE
 
 #Default configuration
-#SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_CLASSIC_1K
+SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_CLASSIC_1K
 #SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_CLASSIC_4K
 #SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_ULTRALIGHT
-SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_NONE
+#SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_NONE
 #SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_ISO14443A_READER
 
 #Default button actions
@@ -50,8 +50,8 @@ SETTINGS	+= -DDEFAULT_GREEN_LED_ACTION=LED_POWERED
 SETTINGS	+= -DLED_SETTING_GLOBAL
 
 #Default logging mode
-SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_OFF
-#SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_MEMORY
+#SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_OFF
+SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_MEMORY
 #SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_TERMINAL
 
 #Define if log settings should be global
@@ -83,6 +83,7 @@ else
 BUILD_DATE   = $(shell date +'\"%y%m%d\"')
 endif
 COMMIT_ID	 = $(shell git rev-parse --short HEAD)
+CHAMELEON_REVSTR = "$(COMMIT_ID) @ $(BUILD_DATE)"
 MCU          = atxmega128a4u
 ARCH         = XMEGA
 BOARD        = NONE
@@ -116,8 +117,13 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 
 # Default target
-all:
+default: all
 
+arduino_crypto_lib:
+	cd ArduinoCryptoLib/host/Crypto
+	make -f Makefile
+
+all: arduino_crypto_lib
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
 include $(LUFA_PATH)/Build/lufa_sources.mk
