@@ -35,6 +35,7 @@
  *  the device's capabilities and functions.
  */
 
+#include "Chameleon-Mini.h"
 #include "LUFADescriptors.h"
 #include <LUFA/Version.h>
 
@@ -61,9 +62,10 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
         .VendorID 							= 0x16D0, // MCS Electronics (http://www.mcselec.com)
         .ProductID 							= 0x04B2, // darksimpson's PID #2 granted to Chameleon-Mini
 #if LUFA_VERSION_INTEGER >= 0x140928
-    .ReleaseNumber          = VERSION_BCD(0,0,1),
+    .ReleaseNumber          = VERSION_BCD(CHAMELEON_MINI_FIRMWARE_MAJOR, CHAMELEON_MINI_FIRMWARE_MINOR, 
+		                          CHAMELEON_MINI_FIRMWARE_REVISION),
 #else
-    .ReleaseNumber          = VERSION_BCD(00.01),
+    .ReleaseNumber          = VERSION_BCD(CHAMELEON_MINI_FIRMWARE_ALTREV),
 #endif
     .ManufacturerStrIndex   = 0x01,
     .ProductStrIndex        = 0x02,
@@ -205,7 +207,7 @@ const USB_Descriptor_String_t PROGMEM ManufacturerString =
 {
     .Header                 = {.Size = USB_STRING_LEN(20), .Type = DTYPE_String},
 
-    .UnicodeString          = L"Kasper & Oswald GmbH"
+    .UnicodeString          = L"ParkLand/ToyFoundary/SimonY"
 };
 
 /** Product descriptor string. This is a Unicode string containing the product's details in human readable form,

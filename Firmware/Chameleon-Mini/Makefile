@@ -78,12 +78,11 @@ SPM_HELPER_OBJCOPY = --set-section-flags=.spmhelper="alloc,load"
 
 #Build configuration
 ifeq ($(OS),Windows_NT)
-BUILD_DATE   = "\"$(shell date /t)\""
+BUILD_DATE   = "$(shell date /t)"
 else
-BUILD_DATE   = $(shell date +'\"%y%m%d\"')
+BUILD_DATE   = $(shell date +'%y%m%d')
 endif
 COMMIT_ID	 = $(shell git rev-parse --short HEAD)
-CHAMELEON_REVSTR = "$(COMMIT_ID) @ $(BUILD_DATE)"
 MCU          = atxmega128a4u
 ARCH         = XMEGA
 BOARD        = NONE
@@ -97,8 +96,8 @@ SRC         += Codec/Codec.c Codec/ISO14443-2A.c Codec/Reader14443-2A.c Codec/Sn
 SRC         += Application/MifareUltralight.c Application/MifareClassic.c Application/ISO14443-3A.c Application/Crypto1.c Application/Reader14443A.c Application/Sniff14443A.c
 SRC         += $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = ../LUFA
-CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) -DBUILD_DATE=$(BUILD_DATE) -DCOMMIT_ID=\"$(COMMIT_ID)\" $(SETTINGS)
-LD_FLAGS     = -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) -Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR)
+CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) -DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" -DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS)
+LD_FLAGS     = -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) -Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR) -LArduinoCryptoLib/ -lArduinoCrypto
 OBJDIR       = Bin
 OBJECT_FILES = 
 
@@ -117,13 +116,8 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 
 # Default target
-default: all
+all: ArduinoCryptoLib/libCrypto.a
 
-arduino_crypto_lib:
-	cd ArduinoCryptoLib/host/Crypto
-	make -f Makefile
-
-all: arduino_crypto_lib
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
 include $(LUFA_PATH)/Build/lufa_sources.mk
@@ -170,3 +164,8 @@ dfu-prog: $(TARGET).hex $(TARGET).eep
 	dfu-programmer $(MCU) flash-eeprom $(TARGET).eep
 	dfu-programmer $(MCU) flash $(TARGET).hex
 	dfu-programmer $(MCU) reset
+
+ArduinoCryptoLib/libCrypto.a:
+	cd ArduinoCryptoLib/host/Crypto && make
+	cp ArduinoCryptoLib/host/Crypto/libCrypto.a ArduinoCryptoLib/libArduinoCrypto.a
+
