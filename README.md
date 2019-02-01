@@ -81,12 +81,86 @@ SETTINGS        += -DPRIu16=\"PRIu16\"
 The effective changes in executive functioning and interface with our patched firmware versions of the 
 Chameleon Mini RevG boards are documented below in this section. 
 
-## New command: SETKEY
+## New command: SETKEY 
+
+### Description
+
+The command sets the hex-byte-valued key data for one of the predefined (four) keys now 
+stored internally by the Chameleon Mini RevG boards. 
+
+### Usage
+
+```
+SETKEY KeyIdx KeyData
+```
+* *KeyIdx* : An integer between 0-3
+* *KeyData* : Hexadecimal string key data of length at most **2 x MAX_AESBLOCKCIPHER_BITSIZE** (e.g., 
+at most 512 hexadecimal characters)
+
+### Return value
+
+A standard Chameleon [return code](https://github.com/maxieds/ChameleonCryptoModFirmware/blob/master/Firmware/Chameleon-Mini/Terminal/Commands.h#L12) 
+indicating success or failure of the operation. 
+
+### Example
+
+```
+ChameleonMiniSerialTerminal$ SETKEY 0 0000000000000000
+```   
 
 ## New command: GENKEY
 
+### Description
+
+Similar to the **SETKEY** command. Sets the key data for a given built-in key by means of an 
+ascii-string-valued passphrase which we use to generate the key data. 
+
+### Usage
+
+```
+GENKEY KeyIdx PassphraseSrcString
+```
+* *KeyIdx* : An integer between 0-3
+* *PassphraseSrcString* : An (unquoted) ascii-valued source string in plaintext format used as a 
+passphrase to effectively 
+
+### Return value
+
+A standard Chameleon [return code](https://github.com/maxieds/ChameleonCryptoModFirmware/blob/master/Firmware/Chameleon-Mini/Terminal/Commands.h#L12) 
+indicating success or failure of the operation. 
+If the key generation command is successful then **COMMAND_INFO_OK_WITH_TEXT_ID** (101) is returned 
+with text the hexadecimal string value of the key data just updated by the command. 
+
+### Example
+
+```
+ChameleonMiniSerialTerminal$ GENKEY 2 MyNewKeyDataPassphrase0123*#$%^!
+```
+
 ## New command: UPLOAD_ENCRYPTED
 
+### Description
+
+Similar to the functionality, feel and usage of the existing standard **UPLOAD** command to 
+upload the card dump data from a raw unecrypted file format. The dump uploaded here (with 
+specified key data used in the decryption) should be suitably encrypted using the pre-configured 
+AES+CipherMode algorithms for the decryption routine to run correctly (see detailed example below 
+for testing purposes). 
+
+### Usage
+
+```
+ChameleonMiniSerialTerminal$ UPLOAD_ENCRYPTED KeyIdx KeyHexData TimestampSalt
+<User Initiates Upload of the Encrypted Dump via an XModem Commection from the Terminal>
+```
+
+### Example
+
+TODO 
+
+### Detailed example for testing in practice
+
+TODO
 
 
 # Testing and crypto dump utilities
