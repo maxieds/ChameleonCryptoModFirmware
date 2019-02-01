@@ -2,27 +2,31 @@
 #include "Terminal.h"
 #include "../System.h"
 #include "../LEDHook.h"
-
 #include "../LUFADescriptors.h"
 
 #define INIT_DELAY		(2000 / SYSTEM_TICK_MS)
 
 
 USB_ClassInfo_CDC_Device_t TerminalHandle = {
-    .Config = {
-        .ControlInterfaceNumber = 0,
-        .DataINEndpoint = {
-            .Address = CDC_TX_EPADDR,
-            .Size = CDC_TXRX_EPSIZE,
-            .Banks = 1,
-        }, .DataOUTEndpoint = {
-            .Address = CDC_RX_EPADDR,
-            .Size = CDC_TXRX_EPSIZE,
-            .Banks = 1,
-        }, .NotificationEndpoint = {
-            .Address = CDC_NOTIFICATION_EPADDR,
-            .Size = CDC_NOTIFICATION_EPSIZE,
-            .Banks = 1,
+    {
+        0,
+        {
+            CDC_TX_EPADDR,
+            CDC_TXRX_EPSIZE,
+            0, 
+	    1,
+        }, 
+        {
+            CDC_RX_EPADDR,
+            CDC_TXRX_EPSIZE,
+            0, 
+	    1,
+        }, 
+        {
+            CDC_NOTIFICATION_EPADDR,
+            CDC_NOTIFICATION_EPSIZE,
+            0, 
+	    1,
         },
     }
 };

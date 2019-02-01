@@ -2,12 +2,13 @@
 #define READER14443A_H
 
 #include "Application.h"
-#include "Codec/Codec.h"
+#include "ISO14443-3A.h"
+#include "../Codec/Codec.h"
 
 #define CRC_INIT 0x6363
 
-uint8_t ReaderSendBuffer[CODEC_BUFFER_SIZE];
-uint16_t ReaderSendBitCount;
+extern uint8_t ReaderSendBuffer[CODEC_BUFFER_SIZE];
+extern uint16_t ReaderSendBitCount;
 
 void Reader14443AAppInit(void);
 void Reader14443AAppReset(void);
@@ -33,5 +34,6 @@ typedef enum {
 	Reader14443_Identify_Clone
 } Reader14443Command;
 
+extern Reader14443Command Reader14443CurrentCommand;
 
 #endif //READER14443A_H

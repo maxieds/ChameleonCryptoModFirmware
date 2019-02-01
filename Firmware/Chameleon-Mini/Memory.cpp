@@ -5,12 +5,14 @@
  *      Author: skuser
  */
 
+#include <string.h>
+
 #include "Memory.h"
 #include "Configuration.h"
-#include "Common.h"
 #include "Settings.h"
 #include "LEDHook.h"
 #include "System.h"
+#include "ChameleonCrypto.h"
 
 #define USE_DMA
 #define RECV_DMA DMA.CH0
@@ -28,17 +30,9 @@
 #define FRAM_MISO	PIN2_bm
 #define FRAM_SCK	PIN1_bm
 
-/* Declarations from assembler file */
-uint16_t FlashReadWord(uint32_t Address);
-void FlashEraseApplicationPage(uint32_t Address);
-void FlashLoadFlashWord(uint16_t Address, uint16_t Data);
-void FlashEraseWriteApplicationPage(uint32_t Address);
-void FlashEraseFlashBuffer(void);
-void FlashWaitForSPM(void);
-
 static uint8_t ScrapBuffer[] = {0};
 
-INLINE uint8_t SPITransferByte(uint8_t Data)
+uint8_t SPITransferByte(uint8_t Data)
 {
     FRAM_USART.DATA = Data;
 
@@ -48,7 +42,7 @@ INLINE uint8_t SPITransferByte(uint8_t Data)
 }
 
 #ifdef USE_DMA
-INLINE void SPIReadBlock(void* Buffer, uint16_t ByteCount)
+void SPIReadBlock(void* Buffer, uint16_t ByteCount)
 {
     /* Set up read and write transfers */
     RECV_DMA.ADDRCTRL = DMA_CH_SRCRELOAD_NONE_gc | DMA_CH_SRCDIR_FIXED_gc | DMA_CH_DESTRELOAD_NONE_gc | DMA_CH_DESTDIR_INC_gc;
@@ -74,7 +68,7 @@ INLINE void SPIReadBlock(void* Buffer, uint16_t ByteCount)
     SEND_DMA.CTRLB = DMA_CH_TRNIF_bm | DMA_CH_ERRIF_bm;
 }
 #else
-INLINE void SPIReadBlock(void* Buffer, uint16_t ByteCount)
+void SPIReadBlock(void* Buffer, uint16_t ByteCount)
 {
     uint8_t* ByteBuffer = (uint8_t*) Buffer;
 
@@ -89,7 +83,7 @@ INLINE void SPIReadBlock(void* Buffer, uint16_t ByteCount)
 #endif
 
 #ifdef USE_DMA
-INLINE void SPIWriteBlock(const void* Buffer, uint16_t ByteCount)
+void SPIWriteBlock(const void* Buffer, uint16_t ByteCount)
 {
     /* Set up read and write transfers */
     RECV_DMA.ADDRCTRL = DMA_CH_SRCRELOAD_NONE_gc | DMA_CH_SRCDIR_FIXED_gc | DMA_CH_DESTRELOAD_NONE_gc | DMA_CH_DESTDIR_FIXED_gc;
@@ -114,7 +108,7 @@ INLINE void SPIWriteBlock(const void* Buffer, uint16_t ByteCount)
     SEND_DMA.CTRLB = DMA_CH_TRNIF_bm | DMA_CH_ERRIF_bm;
 }
 #else
-INLINE void SPIWriteBlock(const void* Buffer, uint16_t ByteCount)
+void SPIWriteBlock(const void* Buffer, uint16_t ByteCount)
 {
     uint8_t* ByteBuffer = (uint8_t*) Buffer;
 
@@ -127,7 +121,7 @@ INLINE void SPIWriteBlock(const void* Buffer, uint16_t ByteCount)
 }
 #endif
 
-INLINE void FRAMRead(void* Buffer, uint16_t Address, uint16_t ByteCount)
+void FRAMRead(void* Buffer, uint16_t Address, uint16_t ByteCount)
 {
     FRAM_PORT.OUTCLR = FRAM_CS;
 
@@ -140,7 +134,7 @@ INLINE void FRAMRead(void* Buffer, uint16_t Address, uint16_t ByteCount)
     FRAM_PORT.OUTSET = FRAM_CS;
 }
 
-INLINE void FRAMWrite(const void* Buffer, uint16_t Address, uint16_t ByteCount)
+void FRAMWrite(const void* Buffer, uint16_t Address, uint16_t ByteCount)
 {
     FRAM_PORT.OUTCLR = FRAM_CS;
     SPITransferByte(0x06); /* Write Enable */
@@ -160,7 +154,7 @@ INLINE void FRAMWrite(const void* Buffer, uint16_t Address, uint16_t ByteCount)
     FRAM_PORT.OUTSET = FRAM_CS;
 }
 
-INLINE void FlashRead(void* Buffer, uint32_t Address, uint16_t ByteCount)
+void FlashRead(void* Buffer, uint32_t Address, uint16_t ByteCount)
 {
     uint8_t* BufPtr = (uint8_t*) Buffer;
 
@@ -181,7 +175,7 @@ INLINE void FlashRead(void* Buffer, uint32_t Address, uint16_t ByteCount)
     }
 }
 
-INLINE void FlashWrite(const void* Buffer, uint32_t Address, uint16_t ByteCount)
+void FlashWrite(const void* Buffer, uint32_t Address, uint16_t ByteCount)
 {
     const uint8_t* BufPtr = (uint8_t*) Buffer;
 
@@ -223,7 +217,7 @@ INLINE void FlashWrite(const void* Buffer, uint32_t Address, uint16_t ByteCount)
     }
 }
 
-INLINE void FlashErase(uint32_t Address, uint16_t ByteCount)
+void FlashErase(uint32_t Address, uint16_t ByteCount)
 {
     uint16_t PageCount = ByteCount / APP_SECTION_PAGE_SIZE;
     uint32_t PhysicalAddress = Address + FLASH_DATA_ADDR;
@@ -241,7 +235,7 @@ INLINE void FlashErase(uint32_t Address, uint16_t ByteCount)
     }
 }
 
-INLINE void FlashToFRAM(uint32_t Address, uint16_t ByteCount)
+void FlashToFRAM(uint32_t Address, uint16_t ByteCount)
 {
     /* We assume that ByteCount is a multiple of 2 */
     uint32_t PhysicalAddress = Address + FLASH_DATA_ADDR;
@@ -279,7 +273,7 @@ INLINE void FlashToFRAM(uint32_t Address, uint16_t ByteCount)
     }
 }
 
-INLINE void FRAMToFlash(uint32_t Address, uint16_t ByteCount)
+void FRAMToFlash(uint32_t Address, uint16_t ByteCount)
 {
     /* We assume that FlashWrite is always called for write actions that are
      * aligned to APP_SECTION_PAGE_SIZE and a multiple of APP_SECTION_PAGE_SIZE.
@@ -425,6 +419,25 @@ bool MemoryUploadBlock(void* Buffer, uint32_t BlockAddress, uint16_t ByteCount)
         FRAMWrite(Buffer, BlockAddress, ByteCount);
 
         return true;
+    }
+}
+
+bool CryptoMemoryUploadBlock(void *Buffer, uint32_t BlockAddress, uint16_t ByteCount)
+{
+    if (BlockAddress >= MEMORY_SIZE_PER_SETTING) {
+        /* Prevent writing out of bounds by silently ignoring it */
+        return true;
+    } else {
+        /* Calculate bytes left in memory and start writing */
+        uint32_t BytesLeft = MEMORY_SIZE_PER_SETTING - BlockAddress;
+        ByteCount = MIN(ByteCount, BytesLeft);
+
+        /* Store to local encrypted dump crypto memory */
+	bool copyStatus = memcpy(CryptoUploadBuffer + BlockAddress, Buffer, ByteCount);
+        if(copyStatus) { 
+	     CryptoUploadBufferByteCount += ByteCount;
+	}
+        return copyStatus;
     }
 }
 

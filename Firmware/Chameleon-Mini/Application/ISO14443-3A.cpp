@@ -10,8 +10,6 @@
 #define CRC_INIT		0x6363
 #define CRC_INIT_R		0xC6C6 /* Bit reversed */
 
-#define USE_HW_CRC
-
 #ifdef USE_HW_CRC
 void ISO14443AAppendCRCA(void* Buffer, uint16_t ByteCount)
 {
@@ -91,7 +89,6 @@ bool ISO14443ACheckCRCA(const void* Buffer, uint16_t ByteCount)
 }
 #endif
 
-#if 0
 bool ISO14443ASelect(void* Buffer, uint16_t* BitCount, uint8_t* UidCL, uint8_t SAKValue)
 {
     uint8_t* DataPtr = (uint8_t*) Buffer;
@@ -132,6 +129,31 @@ bool ISO14443ASelect(void* Buffer, uint16_t* BitCount, uint8_t* UidCL, uint8_t S
             return false;
         }
     default:
+    {
+        uint8_t CollisionByteCount = ((NVB >> 4) & 0x0f) - 2;
+        uint8_t CollisionBitCount  = (NVB >> 0) & 0x0f;
+        uint8_t mask = 0xFF >> (8 - CollisionBitCount);
+        // Since the UidCL does not contain the BCC, we have to distinguish here
+        if (
+                ((CollisionByteCount == 5 || (CollisionByteCount == 4 && CollisionBitCount > 0)) && memcmp(UidCL, &DataPtr[2], 4) == 0 && (ISO14443A_CALC_BCC(UidCL) & mask) == (DataPtr[6] & mask))
+                ||
+                (CollisionByteCount == 4 && CollisionBitCount == 0 && memcmp(UidCL, &DataPtr[2], 4) == 0)
+                ||
+                (CollisionByteCount < 4 && memcmp(UidCL, &DataPtr[2], CollisionByteCount) == 0 && (UidCL[CollisionByteCount] & mask) == (DataPtr[CollisionByteCount + 2] & mask))
+        )
+        {
+            DataPtr[0] = UidCL[0];
+            DataPtr[1] = UidCL[1];
+            DataPtr[2] = UidCL[2];
+            DataPtr[3] = UidCL[3];
+            DataPtr[4] = ISO14443A_CALC_BCC(DataPtr);
+
+            *BitCount = ISO14443A_CL_FRAME_SIZE;
+        } else {
+            *BitCount = 0;
+        }
+        return false;
+    }
         /* TODO: No anticollision supported */
         *BitCount = 0;
         return false;
@@ -151,8 +173,8 @@ bool ISO14443AWakeUp(void* Buffer, uint16_t* BitCount, uint16_t ATQAValue, bool 
 
         return true;
     } else {
+        *BitCount = 0;
+
         return false;
     }
 }
-
-#endif

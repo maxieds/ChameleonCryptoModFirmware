@@ -23,11 +23,7 @@ static volatile struct {
     volatile bool LoadmodFinished;
 } Flags = { 0 };
 
-typedef enum {
-    /* Demod */
-    DEMOD_DATA_BIT,
-    DEMOD_PARITY_BIT,
-
+typedef enum { 
     /* Loadmod */
     LOADMOD_FDT,
     LOADMOD_START,
@@ -39,7 +35,11 @@ typedef enum {
     LOADMOD_PARITY1,
     LOADMOD_STOP_BIT0,
     LOADMOD_STOP_BIT1,
-    LOADMOD_FINISHED
+    LOADMOD_FINISHED,
+    
+    /* Demod */
+    DEMOD_DATA_BIT,
+    DEMOD_PARITY_BIT,
 } StateType;
 
 /* Define pseudo variables to use fast register access. This is useful for global vars */
@@ -227,17 +227,17 @@ ISR(CODEC_TIMER_LOADMOD_OVF_VECT) {
     /* Bit rate timer. Output a half bit on the output. */
 
     static void* JumpTable[] = {
-        [LOADMOD_FDT] = &&LOADMOD_FDT_LABEL,
-        [LOADMOD_START] = &&LOADMOD_START_LABEL,
-        [LOADMOD_START_BIT0] = &&LOADMOD_START_BIT0_LABEL,
-        [LOADMOD_START_BIT1] = &&LOADMOD_START_BIT1_LABEL,
-        [LOADMOD_DATA0] = &&LOADMOD_DATA0_LABEL,
-        [LOADMOD_DATA1] = &&LOADMOD_DATA1_LABEL,
-        [LOADMOD_PARITY0] = &&LOADMOD_PARITY0_LABEL,
-        [LOADMOD_PARITY1] = &&LOADMOD_PARITY1_LABEL,
-        [LOADMOD_STOP_BIT0] = &&LOADMOD_STOP_BIT0_LABEL,
-        [LOADMOD_STOP_BIT1] = &&LOADMOD_STOP_BIT1_LABEL,
-        [LOADMOD_FINISHED] = &&LOADMOD_FINISHED_LABEL
+        &&LOADMOD_FDT_LABEL,
+        &&LOADMOD_START_LABEL,
+        &&LOADMOD_START_BIT0_LABEL,
+        &&LOADMOD_START_BIT1_LABEL,
+        &&LOADMOD_DATA0_LABEL,
+        &&LOADMOD_DATA1_LABEL,
+        &&LOADMOD_PARITY0_LABEL,
+        &&LOADMOD_PARITY1_LABEL,
+        &&LOADMOD_STOP_BIT0_LABEL,
+        &&LOADMOD_STOP_BIT1_LABEL,
+        &&LOADMOD_FINISHED_LABEL
     };
 
     if ( (StateRegister >= LOADMOD_FDT) && (StateRegister <= LOADMOD_FINISHED) ) {

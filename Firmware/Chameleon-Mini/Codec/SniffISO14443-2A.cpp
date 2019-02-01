@@ -37,6 +37,8 @@
 #define ParityBufferPtr	CodecPtrRegister2
 #define CardBufferPtr   CodecPtrRegister3
 
+RCTraffic TrafficSource = TRAFFIC_READER;
+
 static volatile struct {
     volatile bool ReaderDataAvaliable;
     volatile bool CardDataAvaliable;

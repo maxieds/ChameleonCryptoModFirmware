@@ -11,6 +11,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <stdbool.h>
+
 #include "../Common.h"
 #include "../Configuration.h"
 #include "../Settings.h"

@@ -32,7 +32,7 @@ bool MapTextToId(const MapEntryType* MapPtr, uint8_t MapSize, MapTextPtrType Tex
     return false;
 }
 
-void MapToString(MapEntryType* MapPtr, uint8_t MapSize, char* String, uint16_t MaxBufferSize)
+void MapToString(const MapEntryType* MapPtr, uint8_t MapSize, char* String, uint16_t MaxBufferSize)
 {
     uint8_t EntriesLeft = MapSize;
     uint16_t BytesLeft = MaxBufferSize;

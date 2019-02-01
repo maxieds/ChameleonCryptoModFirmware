@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "ChameleonCrypto.h"
+
 #define CONFIGURATION_NAME_LENGTH_MAX   32
 #define CONFIGURATION_UID_SIZE_MAX      16
 
@@ -124,6 +126,11 @@ typedef struct {
      * Implies whether the Memory can be changed.
      */
     bool ReadOnly;
+
+    /**
+     * The internally stored key data:
+     */
+    KeyData_t KeyData;
 
 } ConfigurationType;
 

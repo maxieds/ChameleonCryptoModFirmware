@@ -24,6 +24,7 @@
 #define CRYPTO_AES_h
 
 #include "BlockCipher.h"
+#include "utility/AVRGCCSupplements.h"
 
 // Determine which AES implementation to export to applications.
 #if defined(ESP32)

@@ -1,11 +1,11 @@
 #include "Reader14443A.h"
 #include "Application.h"
-#include "ISO14443-3A.h"
 #include "../Codec/Reader14443-2A.h"
 #include "Crypto1.h"
+#include "ISO14443-3A.h"
 #include "../System.h"
-
 #include "../Terminal/Terminal.h"
+#include "ISO14443-3A.h"
 
 #define CHECK_BCC(B) ((B[0] ^ B[1] ^ B[2] ^ B[3]) == B[4])
 #define IS_CASCADE_BIT_SET(buf) (buf[0] & 0x04)
@@ -19,10 +19,13 @@
 
 // TODO replace remaining magic numbers
 
+uint8_t ReaderSendBuffer[CODEC_BUFFER_SIZE];
+uint16_t ReaderSendBitCount;
+
 static bool Selected = false;
 Reader14443Command Reader14443CurrentCommand = Reader14443_Do_Nothing;
 
-static enum {
+typedef enum {
     STATE_IDLE,
     STATE_HALT,
     STATE_READY,
@@ -38,18 +41,21 @@ static enum {
     STATE_UL_C_AUTH,
     STATE_UL_EV1_GETVERSION,
     STATE_END
-} ReaderState = STATE_IDLE;
+} ReaderState_t;
+static ReaderState_t ReaderState = STATE_IDLE;
+
+typedef enum {
+    UIDSize_No_UID = 0,
+    UIDSize_Single = 4,
+    UIDSize_Double = 7,
+    UIDSize_Triple = 10
+} UIDSize_t; 
 
 static struct {
     uint16_t ATQA;
     uint8_t SAK;
     uint8_t UID[10];
-    enum {
-        UIDSize_No_UID = 0,
-        UIDSize_Single = 4,
-        UIDSize_Double = 7,
-        UIDSize_Triple = 10
-    } UIDSize;
+    UIDSize_t UIDSize;
 } CardCharacteristics = {0};
 
 typedef enum {
@@ -57,8 +63,6 @@ typedef enum {
     CardType_NXP_MIFARE_Classic_1k,
     CardType_NXP_MIFARE_Classic_4k,
     CardType_NXP_MIFARE_Ultralight,
-//	CardType_NXP_MIFARE_Ultralight_C,
-//	CardType_NXP_MIFARE_Ultralight_EV1,
     CardType_NXP_MIFARE_DESFire,
     CardType_NXP_MIFARE_DESFire_EV1,
     CardType_IBM_JCOP31,
@@ -83,29 +87,42 @@ typedef struct {
     uint8_t ATSSize;
     bool ATSRelevant;
 
-    char Manufacturer[16];
-    char Type[64];
+    const char *Manufacturer;
+    const char *Type;
 } CardIdentificationType;
 
 static const CardIdentificationType PROGMEM CardIdentificationList[] = {
-        [CardType_NXP_MIFARE_Mini] 				= { .ATQA=0x0004, .ATQARelevant=true, .SAK=0x09, .SAKRelevant=true, .ATSRelevant=false, .Manufacturer="NXP", .Type="MIFARE Mini" },
-        [CardType_NXP_MIFARE_Classic_1k] 		= { .ATQA=0x0004, .ATQARelevant=true, .SAK=0x08, .SAKRelevant=true, .ATSRelevant=false, .Manufacturer="NXP", .Type="MIFARE Classic 1k" },
-        [CardType_NXP_MIFARE_Classic_4k] 		= { .ATQA=0x0002, .ATQARelevant=true, .SAK=0x18, .SAKRelevant=true, .ATSRelevant=false, .Manufacturer="NXP", .Type="MIFARE Classic 4k" },
-        [CardType_NXP_MIFARE_Ultralight]        = { .ATQA=0x0044, .ATQARelevant=true, .SAK=0x00, .SAKRelevant=true, .ATSRelevant=false, .Manufacturer="NXP", .Type="MIFARE Ultralight" },
-//        [CardType_NXP_MIFARE_Ultralight_C]      = { .ATQA=0x0044, .ATQARelevant=true, .SAK=0x00, .SAKRelevant=true, .ATSRelevant=false, .Manufacturer="NXP", .Type="MIFARE Ultralight C" },
-//        [CardType_NXP_MIFARE_Ultralight_EV1]    = { .ATQA=0x0044, .ATQARelevant=true, .SAK=0x00, .SAKRelevant=false, .ATSRelevant=false, .Manufacturer="NXP", .Type="MIFARE Ultralight EV1" },
+        //[CardType_NXP_MIFARE_Mini] = 
+	{ 0x0004, true, 0x09, true, {}, 0, false, "NXP", "MIFARE Mini" },
+        //[CardType_NXP_MIFARE_Classic_1k] = 
+	{ 0x0004, true, 0x08, true, {}, 0, false, "NXP", "MIFARE Classic 1k" },
+        //[CardType_NXP_MIFARE_Classic_4k] = 
+	{ 0x0002, true, 0x18, true, {}, 0, false, "NXP", "MIFARE Classic 4k" },
+        //[CardType_NXP_MIFARE_Ultralight] = 
+	{ 0x0044, true, 0x00, true, {}, 0, false, "NXP", "MIFARE Ultralight" },
         // for the following two, setting ATSRelevant to true would cause checking the ATS value, but the NXP paper for distinguishing cards does not recommend this
-        [CardType_NXP_MIFARE_DESFire] 			= { .ATQA=0x0344, .ATQARelevant=true, .SAK=0x20, .SAKRelevant=true, .ATSRelevant=false, .ATSSize= 5, .ATS={0x75, 0x77, 0x81, 0x02, 0x80}, .Manufacturer="NXP", .Type="MIFARE DESFire" },
-        [CardType_NXP_MIFARE_DESFire_EV1] 		= { .ATQA=0x0344, .ATQARelevant=true, .SAK=0x20, .SAKRelevant=true, .ATSRelevant=false, .ATSSize= 5, .ATS={0x75, 0x77, 0x81, 0x02, 0x80}, .Manufacturer="NXP", .Type="MIFARE DESFire EV1" },
-        [CardType_IBM_JCOP31] 					= { .ATQA=0x0304, .ATQARelevant=true, .SAK=0x28, .SAKRelevant=true, .ATSRelevant=true, .ATSSize= 9, .ATS={0x38, 0x77, 0xb1, 0x4a, 0x43, 0x4f, 0x50, 0x33, 0x31}, .Manufacturer="IBM", .Type="JCOP31" },
-        [CardType_IBM_JCOP31_v241] 				= { .ATQA=0x0048, .ATQARelevant=true, .SAK=0x20, .SAKRelevant=true, .ATSRelevant=true, .ATSSize=12, .ATS={0x78, 0x77, 0xb1, 0x02, 0x4a, 0x43, 0x4f, 0x50, 0x76, 0x32, 0x34, 0x31}, .Manufacturer="IBM", .Type="JCOP31 v2.4.1" },
-        [CardType_IBM_JCOP41_v22] 				= { .ATQA=0x0048, .ATQARelevant=true, .SAK=0x20, .SAKRelevant=true, .ATSRelevant=true, .ATSSize=12, .ATS={0x38, 0x33, 0xb1, 0x4a, 0x43, 0x4f, 0x50, 0x34, 0x31, 0x56, 0x32, 0x32}, .Manufacturer="IBM", .Type="JCOP41 v2.2" },
-        [CardType_IBM_JCOP41_v231] 				= { .ATQA=0x0004, .ATQARelevant=true, .SAK=0x28, .SAKRelevant=true, .ATSRelevant=true, .ATSSize=13, .ATS={0x38, 0x33, 0xb1, 0x4a, 0x43, 0x4f, 0x50, 0x34, 0x31, 0x56, 0x32, 0x33, 0x31}, .Manufacturer="IBM", .Type="JCOP41 v2.3.1" },
-        [CardType_Infineon_MIFARE_Classic_1k] 	= { .ATQA=0x0004, .ATQARelevant=true, .SAK=0x88, .SAKRelevant=true, .ATSRelevant=false, .Manufacturer="Infineon", .Type="MIFARE Classic 1k" },
-        [CardType_Gemplus_MPCOS] 				= { .ATQA=0x0002, .ATQARelevant=true, .SAK=0x98, .SAKRelevant=true, .ATSRelevant=false, .Manufacturer="Gemplus", .Type="MPCOS" },
-        [CardType_Innovision_Jewel] 			= { .ATQA=0x0C00, .ATQARelevant=true, .SAKRelevant=false, .ATSRelevant=false, .Manufacturer="Innovision R&T", .Type="Jewel" },
-        [CardType_Nokia_MIFARE_Classic_4k_emulated_6212] = { .ATQA=0x0002, .ATQARelevant=true, .SAK=0x38, .SAKRelevant=true, .ATSRelevant=false, .Manufacturer="Nokia", .Type="MIFARE Classic 4k - emulated (6212 Classic)" },
-        [CardType_Nokia_MIFARE_Classic_4k_emulated_6131] = { .ATQA=0x0008, .ATQARelevant=true, .SAK=0x38, .SAKRelevant=true, .ATSRelevant=false, .Manufacturer="Nokia", .Type="MIFARE Classic 4k - emulated (6131 NFC)" }
+        //[CardType_NXP_MIFARE_DESFire] = 
+	{ 0x0344, true, 0x20, true, {0x75, 0x77, 0x81, 0x02, 0x80},  5, true, "NXP", "MIFARE DESFire" },
+        //[CardType_NXP_MIFARE_DESFire_EV1] = 
+	{ 0x0344, true, 0x20, true, {0x75, 0x77, 0x81, 0x02, 0x80}, 5, false, "NXP", "MIFARE DESFire EV1" },
+        //[CardType_IBM_JCOP31] = 
+	{ 0x0304, true, 0x28, true, {0x38, 0x77, 0xb1, 0x4a, 0x43, 0x4f, 0x50, 0x33, 0x31}, 9, true, "IBM", "JCOP31" },
+        //[CardType_IBM_JCOP31_v241] = 
+	{ 0x0048, true, 0x20, true, {0x78, 0x77, 0xb1, 0x02, 0x4a, 0x43, 0x4f, 0x50, 0x76, 0x32, 0x34, 0x31}, 12, true, "IBM", "JCOP31 v2.4.1" },
+        //[CardType_IBM_JCOP41_v22] = 
+	{ 0x0048, true, 0x20, true, {0x38, 0x33, 0xb1, 0x4a, 0x43, 0x4f, 0x50, 0x34, 0x31, 0x56, 0x32, 0x32}, 12, true, "IBM", "JCOP41 v2.2" },
+        //[CardType_IBM_JCOP41_v231] = 
+	{ 0x0004, true, 0x28, true, {0x38, 0x33, 0xb1, 0x4a, 0x43, 0x4f, 0x50, 0x34, 0x31, 0x56, 0x32, 0x33, 0x31}, 13, true, "IBM", "JCOP41 v2.3.1" },
+        //[CardType_Infineon_MIFARE_Classic_1k] = 
+	{ 0x0004, true, 0x88, true, {}, 0, false, "Infineon", "MIFARE Classic 1k" },
+        //[CardType_Gemplus_MPCOS] = 
+	{ 0x0002, true, 0x98, true, {}, 0, false, "Gemplus", "MPCOS" },
+        //[CardType_Innovision_Jewel] = 
+	{ 0x0C00, true, 0, false, {}, 0, false, "Innovision R&T", "Jewel" },
+        //[CardType_Nokia_MIFARE_Classic_4k_emulated_6212] = 
+	{ 0x0002, true, 0x38, true, {}, 0, false, "Nokia", "MIFARE Classic 4k - emulated (6212 Classic)" },
+        //[CardType_Nokia_MIFARE_Classic_4k_emulated_6131] = 
+	{ 0x0008, true, 0x38, true, {}, 0, false, "Nokia", "MIFARE Classic 4k - emulated (6131 NFC)" },
 };
 
 static CardType CardCandidates[ARRAY_COUNT(CardIdentificationList)];
@@ -281,7 +298,7 @@ static uint16_t Reader14443A_Select(uint8_t * Buffer, uint16_t BitCount)
         Buffer[0] = (ReaderState == STATE_ACTIVE_CL1) ? ISO14443A_CMD_SELECT_CL1 : (ReaderState == STATE_ACTIVE_CL2) ? ISO14443A_CMD_SELECT_CL2 : ISO14443A_CMD_SELECT_CL3;
         Buffer[1] = 0x70; // NVB = 56
         ISO14443AAppendCRCA(Buffer, 7);
-        ReaderState = ReaderState - STATE_ACTIVE_CL1 + STATE_SAK_CL1;
+        ReaderState = (ReaderState_t) (ReaderState - STATE_ACTIVE_CL1 + STATE_SAK_CL1);
         return addParityBits(Buffer, (7 + 2) * BITS_PER_BYTE);
 
     case STATE_SAK_CL1 ... STATE_SAK_CL3:
@@ -296,13 +313,13 @@ static uint16_t Reader14443A_Select(uint8_t * Buffer, uint16_t BitCount)
         {
             Buffer[0] = (ReaderState == STATE_SAK_CL1) ? ISO14443A_CMD_SELECT_CL2 : ISO14443A_CMD_SELECT_CL3;
             Buffer[1] = 0x20; // NVB = 16 bit
-            ReaderState = ReaderState - STATE_SAK_CL1 + STATE_ACTIVE_CL1 + 1;
+            ReaderState = (ReaderState_t) (ReaderState - STATE_SAK_CL1 + STATE_ACTIVE_CL1 + 1);
             return addParityBits(Buffer, 2 * BITS_PER_BYTE);
         } else if (IS_CASCADE_BIT_SET(Buffer) && ReaderState == STATE_SAK_CL3) {
             // TODO handle this very strange hopefully not happening error
         }
         Selected = true;
-        CardCharacteristics.UIDSize = (ReaderState - STATE_SAK_CL1) * 3 + 4;
+        CardCharacteristics.UIDSize = (UIDSize_t) ((ReaderState - STATE_SAK_CL1) * 3 + 4);
         CardCharacteristics.SAK = Buffer[0]; // save last SAK for possible later use
         return 0;
 
@@ -366,7 +383,7 @@ static bool Identify(uint8_t *Buffer, uint16_t *BitCount)
                     continue;
                 if (card.ATSRelevant && !ISO14443_4A_compliant)
                     continue; // for this card type candidate, the ATS is relevant, but the card does not support ISO14443-4A
-                CardCandidates[CardCandidatesIdx++] = i;
+                CardCandidates[CardCandidatesIdx++] = (CardType) i;
             }
 
             if (ISO14443_4A_compliant)
@@ -933,7 +950,7 @@ uint16_t Reader14443AAppProcess(uint8_t* Buffer, uint16_t BitCount)
 					if (cfgid > -1)
 					{
 						CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, "Cloned OK!");
-						ConfigurationSetById(cfgid);
+						ConfigurationSetById((ConfigurationEnum) cfgid);
 						ApplicationReset();
 						ApplicationSetUid(CardCharacteristics.UID);
 						MemoryStore();

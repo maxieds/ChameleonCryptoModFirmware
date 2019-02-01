@@ -18,9 +18,9 @@
 typedef uint8_t MapIdType;
 typedef const char* MapTextPtrType;
 
-const typedef struct {
+typedef struct {
     MapIdType Id;
-    const char Text[MAP_TEXT_BUF_SIZE];
+    const char *Text;
 } MapEntryType;
 
 bool MapIdToText(const MapEntryType* MapPtr, uint8_t MapSize, MapIdType Id, char* Text, uint16_t MaxBufferSize);

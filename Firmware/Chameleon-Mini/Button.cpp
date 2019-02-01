@@ -1,9 +1,8 @@
 #include "Button.h"
-#include "Random.h"
-#include "Common.h"
 #include "Settings.h"
 #include "Memory.h"
 #include "Map.h"
+#include "Random.h"
 #include "Terminal/CommandLine.h"
 #include "Application/Application.h"
 
@@ -284,7 +283,7 @@ bool ButtonSetActionByName(ButtonTypeEnum Type, const char* Action)
     MapIdType Id;
 
     if (MapTextToId(ButtonActionMap, ARRAY_COUNT(ButtonActionMap), Action, &Id)) {
-        ButtonSetActionById(Type, Id);
+        ButtonSetActionById(Type, (ButtonActionEnum) Id);
         return true;
     } else {
         return false;

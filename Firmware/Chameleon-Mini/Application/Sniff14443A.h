@@ -20,5 +20,7 @@ typedef enum {
     Sniff14443_Autocalibrate,
 } Sniff14443Command;
 
+extern Sniff14443Command Sniff14443CurrentCommand;
+
 #endif //CHAMELEON_MINI_SNIFF14443A_H
 

@@ -21,19 +21,20 @@ vpath %.sketch .
 
 LIBRARY = libCrypto.a
 
+CXX=avr-g++
 CPPFLAGS = \
 	-I$(TOPDIR)/host/emulation \
 	-I$(TOPDIR)/libraries/Crypto \
 	-I$(TOPDIR)/libraries/CryptoLW/src \
 	-I$(TOPDIR)/libraries/CryptoLegacy/src \
 	-I$(TOPDIR)/libraries/NewHope \
-	-DHOST_BUILD
+	-DHOST_BUILD \
+        -mmcu=avrxmega7 # Chameleon board specific
 
 CXXFLAGS = -g -Wall $(CPPFLAGS)
 
 SOURCES =   \
-	Acorn128.cpp \
-	AES128.cpp \
+        AES128.cpp \
 	AES192.cpp \
 	AES256.cpp \
 	AESCommon.cpp \
@@ -74,7 +75,8 @@ SOURCES =   \
 	SpeckSmall.cpp \
 	SpeckTiny.cpp \
 	XOF.cpp \
-	XTS.cpp
+	XTS.cpp \
+	AVRGCCSupplements.cpp
 
 SKETCHES = \
 	TestAcorn/TestAcorn.ino \

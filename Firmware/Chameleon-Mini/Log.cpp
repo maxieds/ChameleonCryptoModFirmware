@@ -1,8 +1,8 @@
 #include "Log.h"
 #include "Settings.h"
 #include "Terminal/Terminal.h"
-#include "System.h"
 #include "Map.h"
+#include "System.h"
 #include "LEDHook.h"
 
 static uint8_t LogMem[LOG_SIZE];
@@ -202,7 +202,7 @@ bool LogSetModeByName(const char* Mode)
     MapIdType Id;
 
     if (MapTextToId(LogModeMap, ARRAY_COUNT(LogModeMap), Mode, &Id)) {
-        LogSetModeById(Id);
+        LogSetModeById((LogModeEnum) Id);
         return true;
     }
 

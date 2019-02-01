@@ -95,10 +95,10 @@ COMPILER_PATH      ?=
 BOARD              ?= NONE
 OPTIMIZATION       ?= s
 F_CPU              ?=
-C_STANDARD         ?= gnu99
-CPP_STANDARD       ?= gnu++98
+C_STANDARD         ?= gnu99 #gnu99
+CPP_STANDARD       ?= c++98
 C_FLAGS            ?=
-CPP_FLAGS          ?=
+CPP_FLAGS          ?= -Wall -Wextra -Wno-narrowing
 ASM_FLAGS          ?=
 CC_FLAGS           ?=
 OBJDIR             ?= .
@@ -168,9 +168,9 @@ ifneq ($(OBJDIR),.)
    OBJECT_FILES    := $(addprefix $(patsubst %/,%,$(OBJDIR))/, $(notdir $(OBJECT_FILES)))
 
    # Check if any object file (without path) appears more than once in the object file list
-   ifneq ($(words $(sort $(OBJECT_FILES))), $(words $(OBJECT_FILES)))
-       $(error Cannot build with OBJDIR parameter set - one or more object file name is not unique)
-   endif
+   #ifneq ($(words $(sort $(OBJECT_FILES))), $(words $(OBJECT_FILES)))
+   #    $(error Cannot build with OBJDIR parameter set - one or more object file name is not unique)
+   #endif
 
    # Create the output object file directory if it does not exist and add it to the virtual path list
    $(shell mkdir $(OBJDIR) 2> /dev/null)
@@ -211,7 +211,7 @@ BASE_CPP_FLAGS := -x c++ -O$(OPTIMIZATION) -std=$(CPP_STANDARD)
 BASE_ASM_FLAGS := -x assembler-with-cpp
 
 # Create a list of flags to pass to the linker
-BASE_LD_FLAGS := -lm -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections
+BASE_LD_FLAGS := -Wl,--start-group -Wl,--no-as-needed -lm -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections
 ifeq ($(LINKER_RELAXATIONS), Y)
    BASE_LD_FLAGS += -Wl,--relax
 endif

@@ -25,7 +25,7 @@
 
 #include <inttypes.h>
 
-#if !defined(HOST_BUILD)
+//#if !defined(HOST_BUILD)
 
 // CPU is assumed to be little endian.   Edit this file if you
 // need to port this library to a big endian CPU.
@@ -65,13 +65,14 @@
     }))
 #define be64toh(x)  (htobe64((x)))
 
-#else // HOST_BUILD
+//#else // HOST_BUILD
 
-#include <endian.h>
+// Chameleon Board FYI: ATXMEGA128* is *LITTLE ENDIAN* for the byte order ...
+//#include <endian.h>
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define CRYPTO_LITTLE_ENDIAN 1
 #endif
 
-#endif // HOST_BUILD
+//#endif // HOST_BUILD
 
 #endif

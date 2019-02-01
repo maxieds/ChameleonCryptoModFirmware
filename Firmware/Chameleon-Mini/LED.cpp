@@ -1,9 +1,8 @@
 #include "LED.h"
 #include "Settings.h"
 #include "Map.h"
-
-#include "Terminal/CommandLine.h"
 #include "System.h"
+#include "Terminal/CommandLine.h"
 
 #define BLINK_PRESCALER	1 /* x LEDTick(); */
 
@@ -76,7 +75,7 @@ INLINE void Tick(uint8_t Mask, LEDActionEnum* Action)
                         *Action = LED_NO_ACTION;
                     } else {
                         /* Still some blinks to do. Use the fact that LED_BLINK_XY are ordered sequentially */
-                        *Action = *Action - 1;
+                        *Action = (LEDActionEnum) (*Action - 1);
                     }
                 }
             }
@@ -159,7 +158,7 @@ bool LEDSetFuncByName(uint8_t Mask, const char* Function)
     MapIdType Id;
 
     if (MapTextToId(LEDFunctionMap, ARRAY_COUNT(LEDFunctionMap), Function, &Id)) {
-        LEDSetFuncById(Mask, Id);
+        LEDSetFuncById(Mask, (LEDHookEnum) Id);
         return true;
     } else {
         return false;

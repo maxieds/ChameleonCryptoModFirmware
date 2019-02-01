@@ -1,5 +1,6 @@
 
 #include "Commands.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <avr/pgmspace.h>
 #include <Settings.h>
@@ -9,17 +10,15 @@
 #include "../LUFA/Version.h"
 #include "../Configuration.h"
 #include "../Random.h"
-#include "../Memory.h"
 #include "../System.h"
+#include "../Memory.h"
 #include "../Button.h"
 #include "../AntennaLevel.h"
 #include "../Battery.h"
 #include "../Codec/Codec.h"
 
-extern Reader14443Command Reader14443CurrentCommand;
-extern Sniff14443Command Sniff14443CurrentCommand;
-
-extern const PROGMEM CommandEntryType CommandTable[];
+//Reader14443Command Reader14443CurrentCommand;
+//Sniff14443Command Sniff14443CurrentCommand;
 
 CommandStatusIdType CommandGetVersion(char* OutParam)
 {
@@ -129,6 +128,63 @@ CommandStatusIdType CommandExecUpload(char* OutMessage)
 {
     XModemReceive(MemoryUploadBlock);
     return COMMAND_INFO_XMODEM_WAIT_ID;
+}
+
+CommandStatusIdType CommandExecParamUploadEncrypted(char *outMessage, const char *InParams) { 
+		
+     const char *uploadEncSyntaxErrorMsg = "Syntax: UPLOAD_ENCRYPTED KeyIdx KeyData(HexBytes) TimeSalt;";
+     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
+     strcpy(InParamsCopy, InParams);
+     char *keyIndex = strtok(InParamsCopy, " ");
+     if(keyIndex == NULL) {
+	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE); 
+          return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     char *keyData = strtok(NULL, " ");
+     if(keyData == NULL) {
+	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE);
+          return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     char *timestampSalt = strtok(NULL, " ");
+     if(timestampSalt == NULL) {
+	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE);
+          return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     
+     size_t keyIndexNum = atoi(keyIndex);
+     if(keyIndexNum < 0 || keyIndexNum >= NUM_KEYS_STORAGE) {
+         snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
+                    PSTR("Key index #%d out of range. Try keys indexed 0-%d."), 
+		    keyIndexNum, NUM_KEYS_STORAGE - 1);
+          return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     size_t keyDataByteCount = 0, saltDataByteCount = 0;
+     uint8_t *LocalKeyData = GetKeyDataFromString(keyData, &keyDataByteCount);
+     if(!LocalKeyData) { 
+          snprintf_P(outMessage, TERMINAL_BUFFER_SIZE, 
+	             PSTR("Supplied key data (\"%s\") is invalid."), keyData);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     else if(keyDataByteCount != ActiveConfiguration.KeyData.keyLengths[keyIndexNum]) { 
+          snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
+                    PSTR("Key #%d input byte count does not match the actual key length."), 
+		    keyIndexNum); 
+          return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     else if(strncmp((const char *) ActiveConfiguration.KeyData.keys[keyIndexNum], 
+		     (const char *) LocalKeyData, 
+		     keyDataByteCount)) { 
+          free(LocalKeyData);
+          snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
+                    PSTR("Key #%d input [%s] does not match stored key."), 
+		    keyIndexNum, keyData); 
+          return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     free(LocalKeyData);
+     uint8_t *LocalIVSaltData = GetKeyDataFromString(timestampSalt, &saltDataByteCount);
+     XModemReceiveEncrypted(CryptoMemoryUploadBlock, keyIndexNum, 
+	                    LocalIVSaltData, saltDataByteCount);
+     return COMMAND_INFO_XMODEM_WAIT_ID;
 }
 
 CommandStatusIdType CommandExecDownload(char* OutMessage)

@@ -4,4 +4,5 @@ ChaChaPoly.o .depend/ChaChaPoly.d : ../../libraries/Crypto/ChaChaPoly.cpp \
  ../../libraries/Crypto/Cipher.h ../../libraries/Crypto/ChaCha.h \
  ../../libraries/Crypto/Poly1305.h ../../libraries/Crypto/BigNumberUtil.h \
  ../../libraries/Crypto/Crypto.h \
+ ../../libraries/Crypto/utility/AVRGCCSupplements.h \
  ../../libraries/Crypto/utility/EndianUtil.h

@@ -703,9 +703,9 @@
 				USB_Descriptor_Header_t Header; /**< Descriptor header, including type and size. */
 
 				#if (((ARCH == ARCH_AVR8) || (ARCH == ARCH_XMEGA)) && !defined(__DOXYGEN__))
-				wchar_t  UnicodeString[];
+				const wchar_t  *UnicodeString;
 				#else
-				uint16_t UnicodeString[]; /**< String data, as unicode characters (alternatively,
+				const uint16_t *UnicodeString; /**< String data, as unicode characters (alternatively,
 				                           *   string language IDs). If normal ASCII characters are
 				                           *   to be used, they must be added as an array of characters
 				                           *   rather than a normal C string so that they are widened to

@@ -5,32 +5,34 @@
 #include "Memory.h"
 #include "LEDHook.h"
 #include "Terminal/CommandLine.h"
-
 #include "System.h"
 
 #define SETTING_TO_INDEX(S) (S - SETTINGS_FIRST)
 #define INDEX_TO_SETTING(I) (I + SETTINGS_FIRST)
 
 SettingsType GlobalSettings;
-SettingsType EEMEM StoredSettings = {
-    .ActiveSettingIdx = SETTING_TO_INDEX(DEFAULT_SETTING),
-    .ActiveSettingPtr = &GlobalSettings.Settings[SETTING_TO_INDEX(DEFAULT_SETTING)],
-
-    .Settings = { [0 ... (SETTINGS_COUNT-1)] =	{
-        .Configuration = DEFAULT_CONFIGURATION,
-        .ButtonActions = {
-                [BUTTON_L_PRESS_SHORT] = DEFAULT_LBUTTON_ACTION, [BUTTON_R_PRESS_SHORT] = DEFAULT_RBUTTON_ACTION,
-                [BUTTON_L_PRESS_LONG]  = DEFAULT_LBUTTON_ACTION, [BUTTON_R_PRESS_LONG]  = DEFAULT_RBUTTON_ACTION
+static const SettingsEntryType DefaultSEType = {
+        {
+                DEFAULT_RBUTTON_ACTION, 
+		DEFAULT_RBUTTON_ACTION, 
+		DEFAULT_LBUTTON_ACTION, 
+		DEFAULT_LBUTTON_ACTION
         },
-        .LogMode = DEFAULT_LOG_MODE,
-        .LEDRedFunction = DEFAULT_RED_LED_ACTION,
-        .LEDGreenFunction = DEFAULT_GREEN_LED_ACTION,
-        .PendingTaskTimeout = DEFAULT_PENDING_TASK_TIMEOUT,
-        .ReaderThreshold = DEFAULT_READER_THRESHOLD
-    }}
+        DEFAULT_LOG_MODE,
+        DEFAULT_CONFIGURATION,
+        DEFAULT_RED_LED_ACTION,
+        DEFAULT_GREEN_LED_ACTION,
+        DEFAULT_PENDING_TASK_TIMEOUT,
+        DEFAULT_READER_THRESHOLD
+};
+SettingsType EEMEM StoredSettings = {
+    SETTING_TO_INDEX(DEFAULT_SETTING),
+    &GlobalSettings.Settings[SETTING_TO_INDEX(DEFAULT_SETTING)],
+    {}
 };
 
 void SettingsLoad(void) {
+    memcpy(&(StoredSettings.Settings), &DefaultSEType, sizeof(DefaultSEType));
     ReadEEPBlock((uint16_t) &StoredSettings, &GlobalSettings, sizeof(SettingsType));
 }
 
@@ -84,7 +86,7 @@ bool SettingsSetActiveById(uint8_t Setting) {
         }
 
         /* Notify LED. blink according to current setting */
-        LEDHook(LED_SETTING_CHANGE, LED_BLINK + SettingIdx);
+        LEDHook(LED_SETTING_CHANGE, (LEDActionEnum) (LED_BLINK + SettingIdx));
 
         return true;
     } else {

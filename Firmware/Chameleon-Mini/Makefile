@@ -10,8 +10,8 @@ SETTINGS    += -DCONFIG_MF_CLASSIC_1K_7B_SUPPORT
 SETTINGS    += -DCONFIG_MF_CLASSIC_4K_SUPPORT
 SETTINGS    += -DCONFIG_MF_CLASSIC_4K_7B_SUPPORT
 SETTINGS    += -DCONFIG_MF_ULTRALIGHT_SUPPORT 
-SETTINGS	+= -DCONFIG_ISO14443A_SNIFF_SUPPORT
-SETTINGS	+= -DCONFIG_ISO14443A_READER_SUPPORT
+SETTINGS    += -DCONFIG_ISO14443A_SNIFF_SUPPORT
+SETTINGS    += -DCONFIG_ISO14443A_READER_SUPPORT
 
 #Support magic mode on mifare classic configuration
 SETTINGS	+= -DSUPPORT_MF_CLASSIC_MAGIC_MODE
@@ -69,6 +69,20 @@ SETTINGS	+= -DDEFAULT_READER_THRESHOLD=400
 #Use EEPROM to store settings
 SETTINGS	+= -DENABLE_EEPROM_SETTINGS
 
+## Setup the default cipher mode and block cipher types here:
+SETTINGS        += -DCIPHER_MODE_TYPE_CTR
+#SETTINGS        += -DCIPHER_MODE_TYPE_CFB
+#SETTINGS        += -DCIPHER_MODE_TYPE_OFB
+#SETTINGS        += -DCIPHER_MODE_TYPE_CBC
+SETTINGS        += -DDEFAULT_COUNTER_SIZE=4 # OR 0 if none needed
+#SETTINGS        += -DBLOCK_CIPHER_TYPE_AES128
+#SETTINGS        += -DBLOCK_CIPHER_TYPE_AES192
+SETTINGS        += -DBLOCK_CIPHER_TYPE_AES256
+
+## Specify the default passphrase needed to flash / lock / unlock the device:
+SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"MyFlashLockPwd11\"
+SETTINGS        += -DPRIu16=\"PRIu16\"
+
 #Memory definitions and objcopy flags to include sections in binaries
 FLASH_DATA_ADDR = 0x10000 #Start of data section in flash
 FLASH_DATA_SIZE = 0x10000 #Size of data section in flash
@@ -90,14 +104,15 @@ F_CPU        = 27120000
 F_USB        = 48000000
 TARGET       = Chameleon-Mini
 OPTIMIZATION = s
-SRC         += $(TARGET).c LUFADescriptors.c System.c Configuration.c Random.c Common.c Memory.c MemoryAsm.S Button.c Log.c Settings.c LED.c Map.c AntennaLevel.c
-SRC         += Terminal/Terminal.c Terminal/Commands.c Terminal/XModem.c Terminal/CommandLine.c
-SRC         += Codec/Codec.c Codec/ISO14443-2A.c Codec/Reader14443-2A.c Codec/SniffISO14443-2A.c Codec/Reader14443-ISR.S
-SRC         += Application/MifareUltralight.c Application/MifareClassic.c Application/ISO14443-3A.c Application/Crypto1.c Application/Reader14443A.c Application/Sniff14443A.c
+SRC         += $(TARGET).cpp LUFADescriptors.cpp System.cpp Configuration.cpp Random.cpp Common.cpp Memory.cpp MemoryAsm.S Button.cpp Log.cpp Settings.cpp LED.cpp Map.cpp AntennaLevel.cpp
+SRC         += Terminal/Terminal.cpp Terminal/Commands.cpp Terminal/XModem.cpp Terminal/CommandLine.cpp
+SRC         += Codec/Codec.cpp Codec/ISO14443-2A.cpp Codec/Reader14443-2A.cpp Codec/SniffISO14443-2A.cpp Codec/Reader14443-ISR.S
+SRC         += Application/ISO14443-3A.cpp Application/Crypto1.cpp Application/MifareUltralight.cpp Application/MifareClassic.cpp Application/Reader14443A.cpp Application/Sniff14443A.cpp
+SRC         += ChameleonCrypto.cpp
 SRC         += $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = ../LUFA
-CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) -DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" -DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS)
-LD_FLAGS     = -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) -Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR) -LArduinoCryptoLib/ -lArduinoCrypto
+CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) -DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" -DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS) -IArduinoCryptoLib/libraries/Crypto -IArduinoCryptoLib/libraries/CryptoLegacy/src
+LD_FLAGS     =  -Wl,--start-group -Wl,--no-as-needed -LArduinoCryptoLib -lArduinoCrypto -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) -Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR) 
 OBJDIR       = Bin
 OBJECT_FILES = 
 
@@ -166,6 +181,6 @@ dfu-prog: $(TARGET).hex $(TARGET).eep
 	dfu-programmer $(MCU) reset
 
 ArduinoCryptoLib/libCrypto.a:
-	cd ArduinoCryptoLib/host/Crypto && make
+	cd ArduinoCryptoLib/host/Crypto && make clean && make
 	cp ArduinoCryptoLib/host/Crypto/libCrypto.a ArduinoCryptoLib/libArduinoCrypto.a
 

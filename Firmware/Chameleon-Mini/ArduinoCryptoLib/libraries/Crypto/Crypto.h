@@ -26,6 +26,8 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#include "utility/AVRGCCSupplements.h"
+
 void clean(void *dest, size_t size);
 
 template <typename T>

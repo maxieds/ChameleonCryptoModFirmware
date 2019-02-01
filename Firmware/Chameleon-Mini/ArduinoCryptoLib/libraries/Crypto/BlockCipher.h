@@ -26,6 +26,8 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#include "utility/AVRGCCSupplements.h"
+
 class BlockCipher
 {
 public:

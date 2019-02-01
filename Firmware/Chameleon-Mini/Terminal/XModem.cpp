@@ -1,5 +1,10 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "XModem.h"
 #include "Terminal.h"
+#include "../ChameleonCrypto.h"
+#include "../Configuration.h"
 
 #define BYTE_NAK        0x15
 #define BYTE_SOH        0x01
@@ -41,6 +46,11 @@ static uint32_t BlockAddress;
 
 static XModemCallbackType CallbackFunc;
 
+static bool DecryptDumpAfterUpload;
+static size_t LocalKeyIndex;
+static uint8_t *LocalIVSaltData;
+static size_t LocalIVSaltDataByteCount;
+
 static uint8_t CalcChecksum(const void* Buffer, uint16_t ByteCount) {
     uint8_t Checksum = CHECKSUM_INIT_VALUE;
     uint8_t* DataPtr = (uint8_t*) Buffer;
@@ -59,8 +69,18 @@ void XModemReceive(XModemCallbackType TheCallbackFunc)
     RetryCount = RECV_INIT_COUNT;
     RetryTimeout = RECV_INIT_TIMEOUT;
     BlockAddress = 0;
-
     CallbackFunc = TheCallbackFunc;
+    DecryptDumpAfterUpload = false;
+}
+
+void XModemReceiveEncrypted(XModemCallbackType TheCallbackFunc, size_t keyIndex, 
+		            uint8_t *ivSaltData, size_t saltDataByteCount) {
+    XModemReceive(TheCallbackFunc);
+    InitCryptoDumpBuffer();
+    DecryptDumpAfterUpload = true;
+    LocalKeyIndex = keyIndex;
+    LocalIVSaltData = ivSaltData;
+    LocalIVSaltDataByteCount = saltDataByteCount;
 }
 
 void XModemSend(XModemCallbackType TheCallbackFunc)
@@ -68,8 +88,8 @@ void XModemSend(XModemCallbackType TheCallbackFunc)
     State = STATE_SEND_INIT;
     RetryTimeout = SEND_INIT_TIMEOUT;
     BlockAddress = 0;
-
     CallbackFunc = TheCallbackFunc;
+    DecryptDumpAfterUpload = false;
 }
 
 bool XModemProcessByte(uint8_t Byte)
@@ -241,6 +261,26 @@ void XModemTick(void)
             State = STATE_OFF;
         }
         break;
+
+    case STATE_OFF:
+	if(DecryptDumpAfterUpload) { 
+            // create the block cipher, decrypt to plaintext, and then upload into memory: 
+	    Cipher_t decryptCipher = CreateBlockCipherObject(
+	        ActiveConfiguration.KeyData.keys[LocalKeyIndex], 
+		ActiveConfiguration.KeyData.keyLengths[LocalKeyIndex], 
+		LocalIVSaltData, LocalIVSaltDataByteCount);
+	    uint8_t *ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
+		      	                         CryptoUploadBufferByteCount);
+	    if(ptextBuf != NULL) { 
+	        MemoryUploadBlock((void *) ptextBuf, 0, CryptoUploadBufferByteCount);
+	    }
+	    // cleanup data and free unused buffers:
+	    DecryptDumpAfterUpload = false;
+	    free(LocalIVSaltData);
+	    LocalIVSaltData = NULL;
+            LocalIVSaltDataByteCount = 0;
+	}
+	break;
 
     default:
         break;

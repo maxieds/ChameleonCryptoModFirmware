@@ -36,33 +36,8 @@
 uint16_t BufferToHexString(char* HexOut, uint16_t MaxChars, const void* Buffer, uint16_t ByteCount);
 uint16_t HexStringToBuffer(void* Buffer, uint16_t MaxBytes, const char* HexIn);
 
-INLINE uint8_t BitReverseByte(uint8_t Byte)
-{
-    extern const uint8_t PROGMEM BitReverseByteTable[];
-
-    return pgm_read_byte(&BitReverseByteTable[Byte]);
-}
-
-INLINE uint8_t OddParityBit(uint8_t Byte)
-{
-    extern const uint8_t PROGMEM OddParityByteTable[];
-
-    return pgm_read_byte(&OddParityByteTable[Byte]);
-}
-
-INLINE uint8_t StringLength(const char* Str, uint8_t MaxLen)
-{
-    uint8_t StrLen = 0;
-
-    while(MaxLen > 0) {
-        if (*Str++ == '\0')
-            break;
-
-        MaxLen--;
-        StrLen++;
-    }
-
-    return StrLen;
-}
+uint8_t BitReverseByte(uint8_t Byte);
+uint8_t OddParityBit(uint8_t Byte);
+uint8_t StringLength(const char* Str, uint8_t MaxLen);
 
 #endif /* COMMON_H_ */

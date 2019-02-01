@@ -9,7 +9,8 @@
 #include "Codec.h"
 #include "Terminal/CommandLine.h"
 
-enum RCTraffic {TRAFFIC_READER, TRAFFIC_CARD} TrafficSource;
+typedef enum {TRAFFIC_READER, TRAFFIC_CARD} RCTraffic;
+extern RCTraffic TrafficSource;
 /* Codec Interface */
 void Sniff14443ACodecInit(void);
 void Sniff14443ACodecDeInit(void);

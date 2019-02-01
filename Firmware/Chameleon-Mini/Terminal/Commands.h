@@ -5,8 +5,8 @@
 
 #include "../Common.h"
 
-#define MAX_COMMAND_LENGTH          16
-#define MAX_STATUS_LENGTH           32
+#define MAX_COMMAND_LENGTH          32
+#define MAX_STATUS_LENGTH           128
 
 
 #define COMMAND_INFO_OK_ID              100
@@ -54,6 +54,8 @@ typedef struct {
   CommandGetFuncType GetFunc;
 } CommandEntryType;
 
+extern const PROGMEM CommandEntryType CommandTable[];
+
 #define COMMAND_VERSION     "VERSION"
 CommandStatusIdType CommandGetVersion(char* OutParam);
 
@@ -72,6 +74,9 @@ CommandStatusIdType CommandSetReadOnly(char* OutMessage, const char* InParam);
 
 #define COMMAND_UPLOAD      "UPLOAD"
 CommandStatusIdType CommandExecUpload(char* OutMessage);
+
+#define COMMAND_UPLOAD_ENCRYPTED  "UPLOAD_ENCRYPTED"
+CommandStatusIdType CommandExecParamUploadEncrypted(char *outMessage, const char *InParams);
 
 #define COMMAND_DOWNLOAD    "DOWNLOAD"
 CommandStatusIdType CommandExecDownload(char* OutMessage);
