@@ -102,7 +102,7 @@ SETKEY KeyIdx KeyData
 ```
 * *KeyIdx* : An integer between 0-3
 * *KeyData* : Hexadecimal string key data of length at most **2 x MAX_AESBLOCKCIPHER_BITSIZE** (e.g., 
-at most 512 hexadecimal characters)
+at most *512/8 = 64* hexadecimal characters)
 
 ### Return value
 
