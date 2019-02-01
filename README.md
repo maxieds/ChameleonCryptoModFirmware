@@ -29,6 +29,13 @@ distribution for our purposes here include the following file lists:
 
 * **./Firmware/Chameleon-Mini/ChameleonCrypto.cpp/h** : The bulk of our new routine support stems 
 from the functions defined and implemented here;
+* **./Firmware/Chameleon-Mini/Configuration.h** : Added the built-in *KeyData* field in the 
+*ConfigurationType* struct (i.e., in the usual *ActiveConfiguration* variable referenced in many 
+places throughout the firmware code); 
+* **./Firmware/Chameleon-Mini/Terminal/XModem.cpp/h** : Needed to modify the XModem upload process 
+to handle custom processing of encrypted dumps loaded via the new **UPLOAD_ENCRYPTED** command 
+documented below; 
+* **./Firmware/Chameleon-Mini/Terminal/Commands.cpp/h** : Implementation of the new commands. 
 * **./Firmware/Chameleon-Mini/ChameleonCryptoUtils/&ast;** : Utilities mostly for development and 
 testing purposes. Also includes a small supply of unencrypted default dump images which we can 
 test the loading routines for in **MF1KDumpSamples**;
