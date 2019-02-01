@@ -173,10 +173,17 @@ TODO
 # Testing and crypto dump utilities
 
 
+# Reading and resources on locking features of the AVR ATMega128 chips in the Chameleon boards
+
+* [AVR ATMega128 chip capabilities](http://www.engbedded.com/fusecalc/) listing 
+* [Memory Lock bits explained](https://www.avrfreaks.net/comment/414083#comment-414083)
+* Tutorials on AVR FUSES: [here (good)](http://www.ladyada.net/learn/avr/fuses.html) and 
+[here (secondard)](https://embedds.com/all-you-need-to-know-about-avr-fuses/)
+* Note: It may be possible to set a flash / erase (EEPROM) password or key with ``avrdude`` directly; 
 
 # TODO (for Maxie / "the developer") 
 
-Add custom debugging / logging codes associated with loading the encrypted dumps and the new 
+* Add custom debugging / logging codes associated with loading the encrypted dumps and the new 
 key storage routines. 
 
 
