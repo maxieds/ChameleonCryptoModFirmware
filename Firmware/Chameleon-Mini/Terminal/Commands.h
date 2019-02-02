@@ -192,6 +192,9 @@ CommandStatusIdType CommandGetField(char* OutMessage);
 CommandStatusIdType CommandExecClone(char* OutMessage);
 
 /* ChameleonCrypto key handling commands: */
+#define COMMAND_KEYAUTH "KEYAUTH"
+CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InParams);
+
 #define COMMAND_SETKEY "SETKEY"
 CommandStatusIdType CommandExecParamSetKey(char* OutMessage, const char *InParams);
 

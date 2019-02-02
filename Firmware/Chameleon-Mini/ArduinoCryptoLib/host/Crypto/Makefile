@@ -21,17 +21,16 @@ vpath %.sketch .
 
 LIBRARY = libCrypto.a
 
-CXX=avr-g++
+CXX=
+HOSTARCH_FLAGS=
 CPPFLAGS = \
 	-I$(TOPDIR)/host/emulation \
 	-I$(TOPDIR)/libraries/Crypto \
 	-I$(TOPDIR)/libraries/CryptoLW/src \
 	-I$(TOPDIR)/libraries/CryptoLegacy/src \
 	-I$(TOPDIR)/libraries/NewHope \
-	-DHOST_BUILD \
-        -mmcu=avrxmega7 # Chameleon board specific
-
-CXXFLAGS = -g -Wall $(CPPFLAGS)
+	-DHOST_BUILD 
+CXXFLAGS = -g -Wall $(CPPFLAGS) $(HOSTARCH_FLAGS)
 
 SOURCES =   \
         AES128.cpp \
@@ -59,7 +58,6 @@ SOURCES =   \
 	GHASH.cpp \
 	Hash.cpp \
 	KeccakCore.cpp \
-        NewHope.cpp \
 	NoiseSource.cpp \
 	OFB.cpp \
 	OMAC.cpp \
@@ -98,7 +96,6 @@ SKETCHES = \
 	TestEd25519/TestEd25519.ino \
 	TestGCM/TestGCM.ino \
 	TestGHASH/TestGHASH.ino \
-	TestNewHope/TestNewHope.ino \
 	TestOFB/TestOFB.ino \
 	TestP521/TestP521.ino \
 	TestP521Math/TestP521Math.ino \
@@ -115,19 +112,28 @@ SKETCHES = \
 
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
 DEPS    = $(patsubst %.cpp,.depend/%.d,$(SOURCES))
-
 SKETCH_OUTPUTS = $(patsubst %.ino,%.sketch,$(SKETCHES))
 
-all: $(LIBRARY)
+all:
+
+chameleon: $(LIBRARY)
+	@echo [WHICH ARCH ARE WE BUILDING CRYPTO LIB FOR?] $(HOSTARCH_FLAGS)
+	cd $(TOPDIR)
+	mv $(LIBRARY) $(TOPDIR)/libArduinoCrypto.a
+
+linux_box_testing: $(LIBRARY)
+	@echo [WHICH ARCH ARE WE BUILDING CRYPTO LIB FOR?] $(HOSTARCH_FLAGS)
+	cd $(TOPDIR)
+	mv $(LIBRARY) $(TOPDIR)/libArduinoCryptoLinuxHostVersion.a
 
 $(LIBRARY): $(OBJECTS)
 	$(RM) $(LIBRARY)
 	$(AR) cr $(LIBRARY) $(OBJECTS)
 
 clean:
-	$(RM) $(OBJECTS) $(LIBRARY)
-	$(RM) $(SKETCH_OUTPUTS)
-	$(RM) -r .depend Test*
+	$(RM) -f $(OBJECTS) $(LIBRARY)
+	$(RM) -f $(SKETCH_OUTPUTS)
+	$(RM) -f -r .depend Test*
 
 check: all $(SKETCH_OUTPUTS)
 	@for sketch in $(SKETCH_OUTPUTS); do \
@@ -143,7 +149,7 @@ check: all $(SKETCH_OUTPUTS)
 	$(CXX) -x c++ $(CXXFLAGS) \
 		-include $(TOPDIR)/host/emulation/Arduino.h \
 		-include $(TOPDIR)/host/emulation/Arduino.cpp \
-		-o $@ $< -L. -lCrypto
+		-o $@ $< -L. -lCrypto -frtti
 
 .depend/%.d: %.cpp
 	@set -e; rm -f $@; mkdir -p `dirname $@`; \

@@ -328,6 +328,13 @@ const PROGMEM CommandEntryType CommandTable[] = {
     NO_GET_FUNCTION
   },
   {
+    COMMAND_KEYAUTH,
+    NO_EXEC_FUNCTION,
+    CommandExecParamKeyAuth, 
+    NO_SET_FUNCTION, 
+    NO_GET_FUNCTION
+  },
+  {
     COMMAND_SETKEY,
     NO_EXEC_FUNCTION,
     CommandExecParamSetKey,

@@ -257,12 +257,15 @@ mostlyclean:
 	rm -f $(OBJECT_FILES)
 	@echo $(MSG_REMOVE_CMD) Removing dependency files of \"$(TARGET)\"
 	rm -f $(DEPENDENCY_FILES)
+	make -f ArduinoCryptoLib/host/Crypto/Makefile clean
+	rm -f ArduinoCryptoLib/*.a
+	rm -f ChameleonCryptoUtils/*.{o,code} ChameleonCryptoUtils/UtilityBin/*
 
 # Cleans all build files, leaving only the original source code
 clean: mostlyclean
 	@echo $(MSG_REMOVE_CMD) Removing output files of \"$(TARGET)\"
-	rm -f *.code $(TARGET).elf $(TARGET).hex $(TARGET).bin $(TARGET).eep $(TARGET).map $(TARGET).lss $(TARGET).sym lib$(TARGET).a
-	cd ArduinoCryptoLib/host/Crypto && make clean
+	rm -f *.code $(TARGET).elf $(TARGET).hex $(TARGET).bin \
+		$(TARGET).eep $(TARGET).map $(TARGET).lss $(TARGET).sym lib$(TARGET).a
 
 # Performs a complete build of the user application and prints size information afterwards
 all: build_begin elf hex bin lss sym size build_end

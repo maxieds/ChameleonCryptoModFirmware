@@ -273,6 +273,31 @@ void XModemTick(void)
 		      	                         CryptoUploadBufferByteCount);
 	    if(ptextBuf != NULL) { 
 	        MemoryUploadBlock((void *) ptextBuf, 0, CryptoUploadBufferByteCount);
+	        free(ptextBuf);
+	    }
+	    else { // we need to try TIMESTAMP+/-1 to account for timing errors (Sigh...):
+                char  timeSinceEpochStr[TERMINAL_BUFFER_SIZE];
+                long int timeSinceEpoch = atol(timeSinceEpochStr);
+		int timingOffsets[] = { -1, 1 };
+		for(int toff = 0; toff < 2; toff++) { 
+                     long int nextTimeSinceEpoch = timeSinceEpoch + timingOffsets[toff];
+		     char nextTimeStr[TERMINAL_BUFFER_SIZE];
+		     snprintf(nextTimeStr, TERMINAL_BUFFER_SIZE, "%lx\0", nextTimeSinceEpoch);
+		     uint8_t nextTimeBytes[TERMINAL_BUFFER_SIZE];
+		     size_t nextTimeByteCount = HexStringToBuffer(nextTimeBytes, TERMINAL_BUFFER_SIZE, 
+				                                  nextTimeStr);
+		     decryptCipher = CreateBlockCipherObject(
+	                      ActiveConfiguration.KeyData.keys[LocalKeyIndex], 
+		              ActiveConfiguration.KeyData.keyLengths[LocalKeyIndex], 
+		              nextTimeBytes, nextTimeByteCount);
+		     ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
+				                 CryptoUploadBufferByteCount);
+		     if(ptextBuf != NULL) { 
+		          MemoryUploadBlock((void *) ptextBuf, 0, CryptoUploadBufferByteCount);
+			  free(ptextBuf);
+			  break;
+		     }
+		}
 	    }
 	    // cleanup data and free unused buffers:
 	    DecryptDumpAfterUpload = false;

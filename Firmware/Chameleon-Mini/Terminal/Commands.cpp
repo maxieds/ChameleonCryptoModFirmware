@@ -134,18 +134,12 @@ CommandStatusIdType CommandExecUpload(char* OutMessage)
 
 CommandStatusIdType CommandExecParamUploadEncrypted(char *outMessage, const char *InParams) { 
 		
-     const char *uploadEncSyntaxErrorMsg = "Syntax: UPLOAD_ENCRYPTED KeyIdx KeyData(HexBytes) TimeSalt;";
+     const char *uploadEncSyntaxErrorMsg = "Syntax: UPLOAD_ENCRYPTED KeyIdx TimeStampSalt;";
      char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
      strcpy(InParamsCopy, InParams);
      char *keyIndex = strtok(InParamsCopy, " ");
      if(keyIndex == NULL) {
 	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE); 
-          free(InParamsCopy);
-	  return COMMAND_ERR_INVALID_PARAM_ID;
-     }
-     char *keyData = strtok(NULL, " ");
-     if(keyData == NULL) {
-	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE);
           free(InParamsCopy);
 	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
@@ -164,35 +158,9 @@ CommandStatusIdType CommandExecParamUploadEncrypted(char *outMessage, const char
           free(InParamsCopy);
 	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     size_t keyDataByteCount = 0, saltDataByteCount = 0;
-     uint8_t *LocalKeyData = GetKeyDataFromString(keyData, &keyDataByteCount);
-     if(!LocalKeyData) { 
-          snprintf_P(outMessage, TERMINAL_BUFFER_SIZE, 
-	             PSTR("Supplied key data (\"%s\") is invalid."), keyData);
-	  free(InParamsCopy);
-	  return COMMAND_ERR_INVALID_PARAM_ID;
-     }
-     else if(keyDataByteCount != ActiveConfiguration.KeyData.keyLengths[keyIndexNum]) { 
-          snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
-                    PSTR("Key #%d input byte count does not match the actual key length."), 
-		    keyIndexNum); 
-          free(InParamsCopy);
-	  free(LocalKeyData);
-	  return COMMAND_ERR_INVALID_PARAM_ID;
-     }
-     else if(strncmp((const char *) ActiveConfiguration.KeyData.keys[keyIndexNum], 
-		     (const char *) LocalKeyData, 
-		     keyDataByteCount)) { 
-          snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
-                    PSTR("Key #%d input [%s] does not match stored key."), 
-		    keyIndexNum, keyData); 
-          free(InParamsCopy);
-	  free(LocalKeyData);
-          return COMMAND_ERR_INVALID_PARAM_ID;
-     }
-     free(InParamsCopy);
-     free(LocalKeyData);
+     size_t saltDataByteCount = 0;
      uint8_t *LocalIVSaltData = GetKeyDataFromString(timestampSalt, &saltDataByteCount);
+     free(InParamsCopy);
      XModemReceiveEncrypted(CryptoMemoryUploadBlock, keyIndexNum, 
 	                    LocalIVSaltData, saltDataByteCount);
      return COMMAND_INFO_XMODEM_WAIT_ID;
@@ -736,7 +704,37 @@ CommandStatusIdType CommandExecClone(char *OutMessage)
     return TIMEOUT_COMMAND;
 }
 
+CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InParams) { 
+     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
+     char *authPassphrase = strtok(InParamsCopy, " ");
+     if(authPassphrase == NULL) { 
+          strncpy(OutMessage, "Invalid or missing authentication passphrase string.", TERMINAL_BUFFER_SIZE);
+	  free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     size_t numApprovedEdits = 0;
+     char *numAuthedEditsStr = strtok(InParamsCopy, " ");
+     if(numAuthedEditsStr == NULL) { 
+          numApprovedEdits = 1;
+     }
+     else {
+          numApprovedEdits = atoi(numAuthedEditsStr);
+     }
+     if(!FLASH_LOCK_PASSPHRASE || strcmp(authPassphrase, FLASH_LOCK_PASSPHRASE)) { 
+          strncpy(OutMessage, "Incorrect authentication passphrase specified.", TERMINAL_BUFFER_SIZE);
+	  free(InParamsCopy);
+	  return COMMAND_INFO_FALSE_ID;
+     }
+     ActiveConfiguration.KeyChangeAuth = numApprovedEdits;
+     free(InParamsCopy);
+     return COMMAND_INFO_TRUE_ID;
+}
+
 CommandStatusIdType CommandExecParamSetKey(char *OutMessage, const char *InParams) { 
+     if(ActiveConfiguration.KeyChangeAuth <= 0) {
+          strncpy(OutMessage, "Not authenticated to change the key data at this time.", TERMINAL_BUFFER_SIZE);
+          return COMMAND_INFO_FALSE_ID;
+     }
      char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
      char *keyIdxParam = strtok(InParamsCopy, " ");
      int keyIndex = 0;
@@ -755,10 +753,15 @@ CommandStatusIdType CommandExecParamSetKey(char *OutMessage, const char *InParam
      uint16_t keyDataByteCount = HexStringToBuffer(keyDataBytes, TERMINAL_BUFFER_SIZE, keyDataParam);
      SetKeyData(ActiveConfiguration.KeyData, keyIndex, keyDataBytes, keyDataByteCount);
      free(InParamsCopy);
+     ActiveConfiguration.KeyChangeAuth -= 1;
      return COMMAND_INFO_OK_ID;
 }
 
 CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParams) { 
+     if(ActiveConfiguration.KeyChangeAuth <= 0) {
+          strncpy(OutMessage, "Not authenticated to change the key data at this time.", TERMINAL_BUFFER_SIZE);
+          return COMMAND_INFO_FALSE_ID;
+     }
      char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
      char *keyIdxParam = strtok(InParamsCopy, " ");
      int keyIndex = 0;
@@ -784,6 +787,7 @@ CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParam
      SetKeyData(ActiveConfiguration.KeyData, keyIndex, keyData, keyDataByteCount);
      BufferToHexString(OutMessage, TERMINAL_BUFFER_SIZE, keyData, keyDataByteCount);
      free(InParamsCopy);
+     ActiveConfiguration.KeyChangeAuth -= 1;
      return COMMAND_INFO_OK_WITH_TEXT_ID;
 }
 

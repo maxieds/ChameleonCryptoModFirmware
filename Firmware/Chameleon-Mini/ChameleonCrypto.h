@@ -42,6 +42,7 @@
      typedef CTR< BlockCipher_t > Cipher_t;
 #endif
 
+typedef size_t KeyAuth_t; // Stores: > 0 indicating number of remaining key data edits if authenticated 
 typedef struct {
      uint8_t *keys[NUM_KEYS_STORAGE];
      size_t keyLengths[NUM_KEYS_STORAGE];

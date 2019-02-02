@@ -117,7 +117,6 @@ LD_FLAGS     =  -Wl,--start-group -Wl,--no-as-needed -LArduinoCryptoLib -lArduin
 OBJDIR       = Bin
 OBJECT_FILES = 
 
-
 #AVRDUDE settings
 AVRDUDE_PROGRAMMER = flip2
 AVRDUDE_MCU = atxmega128a4u
@@ -132,7 +131,7 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 
 # Default target
-all: ArduinoCryptoLib/libCrypto.a
+all: crypto_utils ArduinoCryptoLib/libCrypto.a %.hex %.bin
 
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
@@ -182,6 +181,21 @@ dfu-prog: $(TARGET).hex $(TARGET).eep
 	dfu-programmer $(MCU) reset
 
 ArduinoCryptoLib/libCrypto.a:
-	cd ArduinoCryptoLib/host/Crypto && make
-	cp ArduinoCryptoLib/host/Crypto/libCrypto.a ArduinoCryptoLib/libArduinoCrypto.a
+	cd ArduinoCryptoLib/host/Crypto && make clean
+	cd ArduinoCryptoLib/host/Crypto && make \
+		CXX=avr-g++ HOSTARCH_FLAGS="-mmcu=avrxmega7 -DNEED_LIBSTDCPP" chameleon 
+
+crypto_utils:
+	cd ArduinoCryptoLib/host/Crypto && make clean
+	cd ArduinoCryptoLib/host/Crypto && make \
+		CXX="g++ -Wl,--start-group -Wl,--no-as-needed -lstdc++ -frtti --std=c++11" \
+		linux_box_testing
+	cd ChameleonCryptoUtils && g++ CreateEncryptedDumpImage.cpp -c \
+		-Wl,--start-group -Wl,--no-as-needed -std=c++11 -lstdc++ \
+		-frtti -I/usr/include -I`readlink -f ../ArduinoCryptoLib/libraries/Crypto` \
+		-I`readlink -f ../ArduinoCryptoLib/libraries/CryptoLegacy/src` \
+		-L`readlink -f ../ArduinoCryptoLib` -lArduinoCryptoLinuxHostVersion
+	cd ChameleonCryptoUtils && g++ -o UtilityBin/EncodeDump CreateEncryptedDumpImage.o \
+		-Wl,--start-group -Wl,--no-as-needed -std=c++11 -lstdc++ -frtti \
+		-L`readlink -f ../ArduinoCryptoLib` -lArduinoCryptoLinuxHostVersion
 

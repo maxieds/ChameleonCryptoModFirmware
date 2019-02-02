@@ -43,7 +43,7 @@ class AESSmall256;
 class AESCommon : public BlockCipher
 {
 public:
-    virtual ~AESCommon();
+    virtual ~AESCommon() = 0;
 
     size_t blockSize() const;
 
