@@ -35,7 +35,7 @@
  *  the device's capabilities and functions.
  */
 
-#include "Chameleon-Mini.h"
+#include "Chameleon-Mini-Crypto-Board.h"
 #include "LUFADescriptors.h"
 #include <LUFA/Version.h>
 

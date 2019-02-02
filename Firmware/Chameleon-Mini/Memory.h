@@ -9,8 +9,8 @@
 #define MEMORY_H_
 
 #define MEMORY_SIZE					(FLASH_DATA_SIZE) /* From makefile */
-#define MEMORY_INIT_VALUE			0x00
-#define MEMORY_SIZE_PER_SETTING		8192
+#define MEMORY_INIT_VALUE			        0x00
+#define MEMORY_SIZE_PER_SETTING		                8192
 
 #ifndef __ASSEMBLER__
 

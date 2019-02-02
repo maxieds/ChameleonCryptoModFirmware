@@ -86,6 +86,7 @@ SETTINGS        += -DPRIu16=\"PRIu16\"
 
 #Memory definitions and objcopy flags to include sections in binaries
 FLASH_DATA_ADDR = 0x10000 #Start of data section in flash
+#FLASH_DATA_SIZE = 0x10000 #Size of data section in flash
 FLASH_DATA_SIZE = 0x10000 #Size of data section in flash
 FLASH_DATA_OBJCOPY = --set-section-flags=.flashdata="alloc,load"
 SPM_HELPER_ADDR = 0x21FE0 #Start of SPM helper section. Should be last 32Byte in bootloader section
@@ -103,7 +104,7 @@ ARCH         = XMEGA
 BOARD        = NONE
 F_CPU        = 27120000
 F_USB        = 48000000
-TARGET       = Chameleon-Mini
+TARGET       = Chameleon-Mini-Crypto-Board
 OPTIMIZATION = s
 SRC         += $(TARGET).cpp LUFADescriptors.cpp System.cpp Configuration.cpp Random.cpp Common.cpp Memory.cpp MemoryAsm.S Button.cpp Log.cpp Settings.cpp LED.cpp Map.cpp AntennaLevel.cpp
 SRC         += Terminal/Terminal.cpp Terminal/Commands.cpp Terminal/XModem.cpp Terminal/CommandLine.cpp

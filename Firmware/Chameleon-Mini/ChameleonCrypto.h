@@ -6,6 +6,11 @@
 #ifndef __CHAMELEON_CRYPTO_H__
 #define __CHAMELEON_CRYPTO_H__
 
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/eeprom.h>
+#include <avr/pgmspace.h>
+
 #include <CTR.h>
 #include <CFB.h>
 #include <OFB.h>
@@ -16,10 +21,10 @@
 #include "Log.h"
 #include "Common.h"
 
-#ifndef NUM_KEYS_STORAGE || NUM_KEYS_STORAGE <= 0
+#if !defined(NUM_KEYS_STORAGE) || NUM_KEYS_STORAGE <= 0
      #define NUM_KEYS_STORAGE          (4)
 #endif
-#define MAX_KEY_LENGTH            (256)
+#define MAX_KEY_LENGTH            (BLOCK_CIPHER_KEY_BYTE_SIZE)
 
 #if defined(BLOCK_CIPHER_TYPE_AES128)
      typedef AES128 BlockCipher_t;
@@ -52,8 +57,9 @@ typedef struct {
 #define EEP_KEY_DATA_START        (FRAM_LOG_START_ADDR + FRAM_LOG_SIZE + 1)
 #define EEP_KEY_DATA_END          (EEP_KEY_DATA_START + EEP_KEY_DATA_SIZE)
 
-extern uint8_t CryptoUploadBuffer[MEMORY_SIZE_PER_SETTING];
-extern uint16_t CryptoUploadBufferByteCount;
+#define CRYPTO_UPLOAD_BUFSIZE     (1024) // for MF1K dump sizes
+extern uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE] EEMEM;
+extern uint16_t CryptoUploadBufferByteCount EEMEM;
 
 void InitCryptoDumpBuffer();
 

@@ -282,7 +282,7 @@ void XModemTick(void)
 		for(int toff = 0; toff < 2; toff++) { 
                      long int nextTimeSinceEpoch = timeSinceEpoch + timingOffsets[toff];
 		     char nextTimeStr[TERMINAL_BUFFER_SIZE];
-		     snprintf(nextTimeStr, TERMINAL_BUFFER_SIZE, "%lx\0", nextTimeSinceEpoch);
+		     snprintf(nextTimeStr, TERMINAL_BUFFER_SIZE, PSTR("%lx\0"), nextTimeSinceEpoch);
 		     uint8_t nextTimeBytes[TERMINAL_BUFFER_SIZE];
 		     size_t nextTimeByteCount = HexStringToBuffer(nextTimeBytes, TERMINAL_BUFFER_SIZE, 
 				                                  nextTimeStr);

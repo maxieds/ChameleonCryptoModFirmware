@@ -1,4 +1,4 @@
-#include "Chameleon-Mini.h"
+#include "Chameleon-Mini-Crypto-Board.h"
 
 int main(void)
 {

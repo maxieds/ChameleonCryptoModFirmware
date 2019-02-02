@@ -13,8 +13,8 @@
 #include "Terminal/Terminal.h"
 #include "System.h"
 
-uint8_t CryptoUploadBuffer[MEMORY_SIZE_PER_SETTING];
-uint16_t CryptoUploadBufferByteCount;
+uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE] EEMEM;
+uint16_t CryptoUploadBufferByteCount EEMEM;
 
 void InitCryptoDumpBuffer() { 
      memset(CryptoUploadBuffer, 0, MEMORY_SIZE_PER_SETTING);

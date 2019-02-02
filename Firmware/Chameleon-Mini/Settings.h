@@ -8,14 +8,15 @@
 #ifndef SETTINGS_H_
 #define SETTINGS_H_
 
+#include <avr/eeprom.h>
+
 #include "Button.h"
 #include "Configuration.h"
 #include "Log.h"
 #include "LED.h"
 #include "Memory.h"
-#include <avr/eeprom.h>
 
-#define SETTINGS_COUNT		(MEMORY_SIZE / MEMORY_SIZE_PER_SETTING)
+#define SETTINGS_COUNT		(MIN(1, (MEMORY_SIZE / MEMORY_SIZE_PER_SETTING) - 4))
 #define SETTINGS_FIRST		1
 #define SETTINGS_LAST		(SETTINGS_FIRST + SETTINGS_COUNT - 1)
 
