@@ -26,8 +26,8 @@ bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength) {
           return false;
      }
      char dumpHeaderBytes[CRYPTO_UPLOAD_HEADER_SIZE];
-     memcpy(dumpHeaderBytes, dumpDataBytes, CRYPTO_UPLOAD_HEADER_SIZE);
-     if(strncmp(dumpHeaderBytes, CRYPTO_UPLOAD_HEADER, CRYPTO_UPLOAD_HEADER_SIZE)) { 
+     memcpy(dumpHeaderBytes, dumpDataBuf, CRYPTO_UPLOAD_HEADER_SIZE);
+     if(strncmp(dumpHeaderBytes, PSTR(CRYPTO_UPLOAD_HEADER), CRYPTO_UPLOAD_HEADER_SIZE)) { 
           return false;
      }
      return true;
