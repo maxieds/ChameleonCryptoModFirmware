@@ -250,6 +250,5 @@ TODO
 
 * Add custom debugging / logging codes associated with loading the encrypted dumps and the new 
 key storage routines. 
-* Do we need a corresponding **DOWNLOAD_ENCRYPTED** command to download existing in-memory dump 
-images of cards in encrypted file format? 
+* Explore hacking the firmware source and ``gdb-avr`` utilities for debugging? 
 
