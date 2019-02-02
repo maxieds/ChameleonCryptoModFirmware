@@ -55,11 +55,6 @@ static uint16_t ApplicationProcessDummy(uint8_t* ByteBuffer, uint16_t ByteCount)
 static void ApplicationGetUidDummy(ConfigurationUidType Uid) { }
 static void ApplicationSetUidDummy(ConfigurationUidType Uid) { }
 
-static const KeyData_t DEFAULT_KEY_DATA = { 
-     { 0 },
-     { 0 }
-};
-
 static const PROGMEM ConfigurationType ConfigurationTable[] = {
     [CONFIG_NONE] = 
     {
@@ -76,7 +71,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         0,
         0,
         true, 
-	DEFAULT_KEY_DATA,
 	0
     },
 #ifdef CONFIG_MF_ULTRALIGHT_SUPPORT
@@ -95,7 +89,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         MIFARE_ULTRALIGHT_UID_SIZE,
         MIFARE_ULTRALIGHT_MEM_SIZE,
         false, 
-	DEFAULT_KEY_DATA,
 	0
 
     },
@@ -114,7 +107,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         MIFARE_ULTRALIGHT_UID_SIZE,
         MIFARE_ULTRALIGHT_EV11_MEM_SIZE,
         false, 
-	DEFAULT_KEY_DATA,
 	0
 
     },
@@ -133,7 +125,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         MIFARE_ULTRALIGHT_UID_SIZE,
         MIFARE_ULTRALIGHT_EV12_MEM_SIZE,
         false, 
-	DEFAULT_KEY_DATA,
 	0
 
     },
@@ -154,7 +145,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         MIFARE_CLASSIC_UID_SIZE,
         MIFARE_CLASSIC_1K_MEM_SIZE,
         false, 
-	DEFAULT_KEY_DATA,
 	0
 
     },
@@ -175,7 +165,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         ISO14443A_UID_SIZE_DOUBLE,
         MIFARE_CLASSIC_1K_MEM_SIZE,
         false, 
-	DEFAULT_KEY_DATA,
 	0
 
     },
@@ -196,7 +185,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         MIFARE_CLASSIC_UID_SIZE,
         MIFARE_CLASSIC_4K_MEM_SIZE,
         false, 
-	DEFAULT_KEY_DATA,
 	0
 
     },
@@ -217,7 +205,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         ISO14443A_UID_SIZE_DOUBLE,
         MIFARE_CLASSIC_4K_MEM_SIZE,
         false, 
-	DEFAULT_KEY_DATA,
 	0
 
     },
@@ -238,7 +225,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         0,
         0,
         true, 
-	DEFAULT_KEY_DATA,
 	0
 
     },
@@ -259,7 +245,6 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         0,
         0,
         false, 
-	DEFAULT_KEY_DATA,
 	0
 
     },

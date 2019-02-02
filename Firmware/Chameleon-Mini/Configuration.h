@@ -130,7 +130,6 @@ typedef struct {
     /**
      * The internally stored key data:
      */
-    KeyData_t KeyData;
     KeyAuth_t KeyChangeAuth;
 
 } ConfigurationType;

@@ -20,7 +20,6 @@
 #include "AntennaLevel.h"
 #include "Settings.h"
 
-//#define CHAMELEON_MINI_VERSION_STRING    BUILD_DATE
 #define CHAMELEON_MINI_VERSION_STRING    (CHAMELEON_REVSTR)
 #define CHAMELEON_MINI_FIRMWARE_MAJOR    (0)
 #define CHAMELEON_MINI_FIRMWARE_MINOR    (0)

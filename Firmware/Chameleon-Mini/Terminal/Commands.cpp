@@ -721,7 +721,7 @@ CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InPara
      else {
           numApprovedEdits = atoi(numAuthedEditsStr);
      }
-     if(!FLASH_LOCK_PASSPHRASE || strcmp(authPassphrase, FLASH_LOCK_PASSPHRASE)) { 
+     if(!AuthLockByPassphrase(authPassphrase)) { 
           strncpy(OutMessage, PSTR("Incorrect authentication passphrase specified."), TERMINAL_BUFFER_SIZE);
 	  free(InParamsCopy);
 	  return COMMAND_ERR_AUTH_FAILED_ID;
@@ -753,7 +753,7 @@ CommandStatusIdType CommandExecParamSetKey(char *OutMessage, const char *InParam
      }
      uint8_t keyDataBytes[TERMINAL_BUFFER_SIZE];
      uint16_t keyDataByteCount = HexStringToBuffer(keyDataBytes, TERMINAL_BUFFER_SIZE, keyDataParam);
-     SetKeyData(ActiveConfiguration.KeyData, keyIndex, keyDataBytes, keyDataByteCount);
+     SetKeyData(keyIndex, keyDataBytes, keyDataByteCount);
      free(InParamsCopy);
      ActiveConfiguration.KeyChangeAuth -= 1;
      return COMMAND_INFO_OK_ID;
@@ -788,7 +788,7 @@ CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParam
 	  free(InParamsCopy);
 	  return COMMAND_ERR_INVALID_USAGE_ID;
      }
-     SetKeyData(ActiveConfiguration.KeyData, keyIndex, keyData, keyDataByteCount);
+     SetKeyData(keyIndex, keyData, keyDataByteCount);
      BufferToHexString(OutMessage, TERMINAL_BUFFER_SIZE, keyData, keyDataByteCount);
      free(InParamsCopy);
      ActiveConfiguration.KeyChangeAuth -= 1;
@@ -811,7 +811,7 @@ CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParam
 	 free(InParamsCopy);
 	 return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     else if(!FLASH_LOCK_PASSPHRASE || strcmp(authKeyParam, FLASH_LOCK_PASSPHRASE)) { 
+     else if(!AuthLockByPassphrase(authKeyParam)) { 
           strncpy(OutMessage, PSTR("Incorrect authentication passphrase to view key specified."), 
 	          TERMINAL_BUFFER_SIZE);
 	  free(InParamsCopy);
@@ -819,14 +819,14 @@ CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParam
      }
      free(InParamsCopy);
      InParamsCopy = NULL;
-     if(ActiveConfiguration.KeyData.keyLengths[keyIndex] > TERMINAL_BUFFER_SIZE) { 
+     if(GlobalSettings.KeyData.keyLengths[keyIndex] > TERMINAL_BUFFER_SIZE) { 
           strncpy(OutMessage, PSTR("Terminal buffer size is insufficient to display key data"), 
 	          TERMINAL_BUFFER_SIZE);
 	  return COMMAND_ERR_INVALID_USAGE_ID;
      }
      BufferToHexString(OutMessage, TERMINAL_BUFFER_SIZE, 
-	               ActiveConfiguration.KeyData.keys[keyIndex], 
-		       ActiveConfiguration.KeyData.keyLengths[keyIndex]);
+	               GlobalSettings.KeyData.keys[keyIndex], 
+		       GlobalSettings.KeyData.keyLengths[keyIndex]);
      return COMMAND_INFO_OK_WITH_TEXT_ID;
 }
 #endif
@@ -836,7 +836,7 @@ CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InPar
           char *InParamCopy = (char *) malloc((strlen(InParam) + 1) * sizeof(char));
 	  strcpy(InParamCopy, InParam);
 	  char *authPwd = strtok(InParamCopy, COMMAND_ARGSEP);
-          if(authPwd == NULL || !FLASH_LOCK_PASSPHRASE || strcmp(authPwd, FLASH_LOCK_PASSPHRASE)) { 
+          if(!AuthLockByPassphrase(authPwd)) { 
                strncpy(OutMessage, PSTR("Invalid flash password specified."), TERMINAL_BUFFER_SIZE);
 	       free(InParamCopy);
 	       return COMMAND_ERR_AUTH_FAILED_ID;
@@ -850,7 +850,7 @@ CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InPar
 CommandStatusIdType CommandExecParamUnlockChip(char *OutMessage, const char *InParam) { 
      char *InParamCopy = (char *) malloc((strlen(InParam) + 1) * sizeof(char));
      char *authPwd = strtok(InParamCopy, COMMAND_ARGSEP);
-     if(authPwd == NULL || !FLASH_LOCK_PASSPHRASE || strcmp(authPwd, FLASH_LOCK_PASSPHRASE)) { 
+     if(!AuthLockByPassphrase(authPwd)) { 
           strncpy(OutMessage, PSTR("Invalid flash password specified."), TERMINAL_BUFFER_SIZE);
 	  free(InParamCopy);
 	  return COMMAND_ERR_AUTH_FAILED_ID;

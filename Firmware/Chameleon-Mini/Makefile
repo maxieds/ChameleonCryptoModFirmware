@@ -6,10 +6,10 @@ SHELL = /bin/sh
 
 #Supported configurations
 SETTINGS    += -DCONFIG_MF_CLASSIC_1K_SUPPORT
-SETTINGS    += -DCONFIG_MF_CLASSIC_1K_7B_SUPPORT
-SETTINGS    += -DCONFIG_MF_CLASSIC_4K_SUPPORT
-SETTINGS    += -DCONFIG_MF_CLASSIC_4K_7B_SUPPORT
-SETTINGS    += -DCONFIG_MF_ULTRALIGHT_SUPPORT 
+#SETTINGS    += -DCONFIG_MF_CLASSIC_1K_7B_SUPPORT
+#SETTINGS    += -DCONFIG_MF_CLASSIC_4K_SUPPORT
+#SETTINGS    += -DCONFIG_MF_CLASSIC_4K_7B_SUPPORT
+#SETTINGS    += -DCONFIG_MF_ULTRALIGHT_SUPPORT 
 SETTINGS    += -DCONFIG_ISO14443A_SNIFF_SUPPORT
 SETTINGS    += -DCONFIG_ISO14443A_READER_SUPPORT
 
@@ -50,8 +50,8 @@ SETTINGS	+= -DDEFAULT_GREEN_LED_ACTION=LED_POWERED
 SETTINGS	+= -DLED_SETTING_GLOBAL
 
 #Default logging mode
-#SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_OFF
-SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_MEMORY
+SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_OFF
+#SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_MEMORY
 #SETTINGS	+= -DDEFAULT_LOG_MODE=LOG_MODE_TERMINAL
 
 #Define if log settings should be global
@@ -85,6 +85,7 @@ SETTINGS        += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key
 SETTINGS        += -DREQUIRE_PASSPHRASE_TO_LOCK_CHIP=0 # Descriptively named setting ... 
 SETTINGS        += -DENABLE_CHIP_UNLOCKING=1 # Let users unlock the chip (with passphrase auth)? 
 SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"$(FLASH_LOCK_PASSPHRASE)\"
+#SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=0
 SETTINGS        += -DPRIu16=\"PRIu16\"
 
 #Memory definitions and objcopy flags to include sections in binaries
@@ -135,7 +136,8 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 
 # Default target
-all: crypto_utils ArduinoCryptoLib/libCrypto.a %.hex %.bin %.elf echo_flash_password
+all: crypto_utils ArduinoCryptoLib/libCrypto.a \
+	$(TARGET).hex $(TARGET).bin $(TARGET).elf echo_flash_password
 
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
@@ -186,12 +188,12 @@ dfu-prog: $(TARGET).hex $(TARGET).eep
 	dfu-programmer $(MCU) flash $(TARGET).hex
 	dfu-programmer $(MCU) reset
 
-ArduinoCryptoLib/libCrypto.a:
+ArduinoCryptoLib/libCrypto.a: ArduinoCryptoLib/libArduinoCrypto.a
 	cd ArduinoCryptoLib/host/Crypto && make clean
 	cd ArduinoCryptoLib/host/Crypto && make \
 		CXX=avr-g++ HOSTARCH_FLAGS="-mmcu=avrxmega7 -DNEED_LIBSTDCPP" chameleon 
 
-crypto_utils:
+crypto_utils: ChameleonCryptoUtils/UtilityBin/EncodeDump
 	cd ArduinoCryptoLib/host/Crypto && make clean
 	cd ArduinoCryptoLib/host/Crypto && make \
 		CXX="g++ -Wl,--start-group -Wl,--no-as-needed -lstdc++ -frtti --std=c++11" \

@@ -10,21 +10,27 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
+#include <string.h>
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
-
-#ifdef DEFAULT_FLASH_LOCK_PASSPHRASE
-     static const char *FLASH_LOCK_PASSPHRASE EEMEM = DEFAULT_FLASH_LOCK_PASSPHRASE;
-#endif
-#ifndef DEFAULT_FLASH_LOCK_PASSPHRASE
-     static const char *FLASH_LOCK_PASSPHRASE EEMEM = NULL; /* disabled */
-#endif
-
-#include <avr/io.h>
 #include <avr/lock.h>
+
+#include "Common.h"
+#include "ChameleonCrypto.h"
+
+static const char PROGMEM FLASH_LOCK_PASSPHRASE_CONSTANT[MAX_KEY_LENGTH] = 
+     DEFAULT_FLASH_LOCK_PASSPHRASE;
+static const size_t PROGMEM FLASH_LOCK_PPH_LENGTH = strlen(DEFAULT_FLASH_LOCK_PASSPHRASE);
+
+INLINE bool AuthLockByPassphrase(const char *authPwd) { 
+     if(authPwd == NULL || !FLASH_LOCK_PPH_LENGTH || strcmp(authPwd, DEFAULT_FLASH_LOCK_PASSPHRASE)) {
+          return false;
+     }
+     return true;
+}
 
 /* Chip locking routines */
 extern "C" { 

@@ -15,8 +15,10 @@
 #include "Log.h"
 #include "LED.h"
 #include "Memory.h"
+#include "ChameleonCrypto.h"
+#include "ChipLocking.h"
 
-#define SETTINGS_COUNT		(MIN(1, (MEMORY_SIZE / MEMORY_SIZE_PER_SETTING) - 4))
+#define SETTINGS_COUNT		4 // (MAX(1, (MEMORY_SIZE / MEMORY_SIZE_PER_SETTING) - 4))
 #define SETTINGS_FIRST		1
 #define SETTINGS_LAST		(SETTINGS_FIRST + SETTINGS_COUNT - 1)
 
@@ -35,6 +37,8 @@ typedef struct {
 } SettingsEntryType;
 
 typedef struct {
+    KeyData_t KeyData;
+    char *AdminPassphrase;
     uint8_t ActiveSettingIdx;
     SettingsEntryType* ActiveSettingPtr;
     SettingsEntryType Settings[SETTINGS_COUNT];

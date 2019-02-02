@@ -4,7 +4,7 @@
 #include "XModem.h"
 #include "Terminal.h"
 #include "../ChameleonCrypto.h"
-#include "../Configuration.h"
+#include "../Settings.h"
 
 #define BYTE_NAK        0x15
 #define BYTE_SOH        0x01
@@ -265,10 +265,8 @@ void XModemTick(void)
     case STATE_OFF:
 	if(DecryptDumpAfterUpload) { 
             // create the block cipher, decrypt to plaintext, and then upload into memory: 
-	    Cipher_t decryptCipher = CreateBlockCipherObject(
-	        ActiveConfiguration.KeyData.keys[LocalKeyIndex], 
-		ActiveConfiguration.KeyData.keyLengths[LocalKeyIndex], 
-		LocalIVSaltData, LocalIVSaltDataByteCount);
+	    Cipher_t decryptCipher = CreateBlockCipherObjectFromKeyIndex(
+		LocalKeyIndex, LocalIVSaltData, LocalIVSaltDataByteCount);
 	    uint8_t *ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
 		      	                         CryptoUploadBufferByteCount);
 	    if(ptextBuf != NULL && ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 
@@ -287,10 +285,8 @@ void XModemTick(void)
 		     uint8_t nextTimeBytes[TERMINAL_BUFFER_SIZE];
 		     size_t nextTimeByteCount = HexStringToBuffer(nextTimeBytes, TERMINAL_BUFFER_SIZE, 
 				                                  nextTimeStr);
-		     decryptCipher = CreateBlockCipherObject(
-	                      ActiveConfiguration.KeyData.keys[LocalKeyIndex], 
-		              ActiveConfiguration.KeyData.keyLengths[LocalKeyIndex], 
-		              nextTimeBytes, nextTimeByteCount);
+		     decryptCipher = CreateBlockCipherObjectFromKeyIndex(
+		              LocalKeyIndex, nextTimeBytes, nextTimeByteCount);
 		     ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
 				                 CryptoUploadBufferByteCount);
 		     if(ptextBuf != NULL && ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 

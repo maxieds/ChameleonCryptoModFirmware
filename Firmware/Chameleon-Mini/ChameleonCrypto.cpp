@@ -8,16 +8,24 @@
 #include <SHA3.h>
 
 #include "ChameleonCrypto.h"
-#include "Configuration.h"
+#include "Settings.h"
 #include "Terminal/Commands.h"
 #include "Terminal/Terminal.h"
 #include "System.h"
 
-uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE] EEMEM;
-uint16_t CryptoUploadBufferByteCount EEMEM;
+uint8_t EEMEM CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
+size_t EEMEM CryptoUploadBufferByteCount;
+
+const KeyData_t DEFAULT_KEY_DATA = { 
+     { 0 },
+     { 0 }
+};
 
 void InitCryptoDumpBuffer() { 
-     memset(CryptoUploadBuffer, 0, CRYPTO_UPLOAD_HEADER_SIZE + CRYPTO_UPLOAD_BUFSIZE);
+     uint8_t zeroFillByte = 0x00;
+     for(int b = 0; b < CRYPTO_UPLOAD_HEADER_SIZE + CRYPTO_UPLOAD_BUFSIZE; b++) {
+          WriteEEPBlock((uint16_t) &(CryptoUploadBuffer[b]), &zeroFillByte, 1);
+     } 
      CryptoUploadBufferByteCount = 0;
 }
 
@@ -26,7 +34,7 @@ bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength) {
           return false;
      }
      char dumpHeaderBytes[CRYPTO_UPLOAD_HEADER_SIZE];
-     memcpy(dumpHeaderBytes, dumpDataBuf, CRYPTO_UPLOAD_HEADER_SIZE);
+     ReadEEPBlock((uint16_t) &dumpDataBuf, (void *) dumpHeaderBytes, CRYPTO_UPLOAD_HEADER_SIZE);
      if(strncmp(dumpHeaderBytes, PSTR(CRYPTO_UPLOAD_HEADER), CRYPTO_UPLOAD_HEADER_SIZE)) { 
           return false;
      }
@@ -51,40 +59,35 @@ uint8_t * GetKeyDataFromString(const char *byteString, size_t *byteBufLengthPara
      return byteBuf;
 }
 
-bool SetKeyData(KeyData_t &keyDataStruct, size_t keyIndex, uint8_t *keyData, size_t keyLength) { 
+bool SetKeyData(size_t keyIndex, uint8_t *keyData, size_t keyLength) { 
      if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE || !keyData || 
         keyLength <= 0 || keyLength > MAX_KEY_LENGTH) { 
           return false;
      }
-     if(keyDataStruct.keys[keyIndex] == NULL) { 
-          keyDataStruct.keys[keyIndex] = (uint8_t *) malloc(keyLength * sizeof(uint8_t));
-     }
-     else if(keyDataStruct.keyLengths[keyIndex] < keyLength) {
-          keyDataStruct.keys[keyIndex] = (uint8_t *) realloc(keyDataStruct.keys[keyIndex], keyLength);
-     }
-     memcpy(keyDataStruct.keys[keyIndex], keyData, keyLength);
-     keyDataStruct.keyLengths[keyIndex] = keyLength;
-     WriteEEPBlock(EEP_KEY_DATA_START, &keyDataStruct, sizeof(keyDataStruct)); // store "forever" 
+     memcpy(&(GlobalSettings.KeyData.keys[keyIndex]), keyData, keyLength);
+     GlobalSettings.KeyData.keyLengths[keyIndex] = keyLength;
+     SettingsSave();
      return true;
 }
 
-bool ZeroFillKeyData(KeyData_t &keyDataStruct, size_t keyIndex, size_t keyLength) {
+bool ZeroFillKeyData(size_t keyIndex, size_t keyLength) {
      if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE || keyLength <= 0 || 
 	keyLength > MAX_KEY_LENGTH) {
           return false;
      }
      uint8_t *zeroBuf = (uint8_t *) malloc(keyLength * sizeof(uint8_t));
      memset(zeroBuf, 0, keyLength);
-     bool success = SetKeyData(keyDataStruct, keyIndex, zeroBuf, keyLength);
+     bool success = SetKeyData(keyIndex, zeroBuf, keyLength);
      free(zeroBuf);
      return success;
 }
 
-bool KeyIsValid(KeyData_t &keyDataStruct, size_t keyIndex) { 
+bool KeyIsValid(size_t keyIndex) { 
      if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE) {
           return false;
      }
-     return keyDataStruct.keys[keyIndex] != NULL;
+     size_t keyLength = GlobalSettings.KeyData.keyLengths[keyIndex];
+     return (keyLength > 0) && (keyLength <= MAX_KEY_LENGTH);
 }
 
 size_t PassphraseToAESKeyData(const char *passphrase, uint8_t *keyDataBuffer, size_t maxKeyDataBytes, 
@@ -115,6 +118,9 @@ size_t PassphraseToAESKeyData(const char *passphrase, uint8_t *keyDataBuffer, si
 Cipher_t CreateBlockCipherObject(const uint8_t *keyData, size_t keyLength, 
 		                 const uint8_t *initVecData, size_t ivLength) { 
      Cipher_t cipherObj;
+     if(keyData == NULL || !keyLength || initVecData == NULL || !ivLength) {
+          return cipherObj;
+     }
      cipherObj.setKey(keyData, keyLength);
      cipherObj.setIV(initVecData, ivLength);
      #ifdef CIPHER_MODE_TYPE_CTR
@@ -126,9 +132,14 @@ Cipher_t CreateBlockCipherObject(const uint8_t *keyData, size_t keyLength,
 }
 
 Cipher_t CreateBlockCipherObjectFromKeyIndex(size_t keyIndex, const uint8_t *initVecData, size_t ivLength) { 
-     return CreateBlockCipherObject(ActiveConfiguration.KeyData.keys[keyIndex], 
-		                    ActiveConfiguration.KeyData.keyLengths[keyIndex], 
-		                    initVecData, ivLength);
+     if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE) {
+          Cipher_t cipherObj;
+	  return cipherObj;
+     }
+     uint8_t keyData[MAX_KEY_LENGTH];
+     size_t keyLength = GlobalSettings.KeyData.keyLengths[keyIndex];
+     ReadEEPBlock((uint16_t) &(GlobalSettings.KeyData.keys[keyIndex]), keyData, keyLength);
+     return CreateBlockCipherObject(keyData, keyLength, initVecData, ivLength);
 }
 
 uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, size_t byteBufLen) { 
@@ -136,7 +147,9 @@ uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, size_t by
           return NULL;
      }
      uint8_t *plaintextBuf = (uint8_t *) malloc(byteBufLen * sizeof(uint8_t));
-     cipherObj.decrypt(plaintextBuf, byteBuf, byteBufLen);
+     uint8_t byteBufLocalCopy[MAX_KEY_LENGTH];
+     ReadEEPBlock((uint16_t) &byteBuf, byteBufLocalCopy, byteBufLen);
+     cipherObj.decrypt(plaintextBuf, byteBufLocalCopy, byteBufLen);
      return plaintextBuf;
 }
 

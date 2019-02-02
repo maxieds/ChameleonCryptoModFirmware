@@ -26,13 +26,16 @@ static const SettingsEntryType DefaultSEType = {
         DEFAULT_READER_THRESHOLD
 };
 SettingsType EEMEM StoredSettings = {
+    DEFAULT_KEY_DATA,
+    "<NO-PASSPHRASE-YET>", 
     SETTING_TO_INDEX(DEFAULT_SETTING),
     &GlobalSettings.Settings[SETTING_TO_INDEX(DEFAULT_SETTING)],
-    {}
+    { DefaultSEType, DefaultSEType, DefaultSEType, DefaultSEType }
 };
 
 void SettingsLoad(void) {
     memcpy(&(StoredSettings.Settings), &DefaultSEType, sizeof(DefaultSEType));
+    strcpy_P(StoredSettings.AdminPassphrase, FLASH_LOCK_PASSPHRASE_CONSTANT);
     ReadEEPBlock((uint16_t) &StoredSettings, &GlobalSettings, sizeof(SettingsType));
 }
 

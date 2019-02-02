@@ -194,7 +194,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
  */
 const USB_Descriptor_String_t PROGMEM LanguageString =
 {
-    .Header                 = {.Size = USB_STRING_LEN(2), .Type = DTYPE_String},
+    .Header                 = {.Size = USB_STRING_LEN(1), .Type = DTYPE_String},
 
     .UnicodeString          = L"\u0409" //LANGUAGE_ID_ENG
 };
@@ -205,7 +205,7 @@ const USB_Descriptor_String_t PROGMEM LanguageString =
  */
 const USB_Descriptor_String_t PROGMEM ManufacturerString =
 {
-    .Header                 = {.Size = USB_STRING_LEN(29), 
+    .Header                 = {.Size = USB_STRING_LEN(27), 
 	                       .Type = DTYPE_String},
 
     .UnicodeString          = L"ParkLand/ToyFoundary/SimonY"
@@ -218,7 +218,7 @@ const USB_Descriptor_String_t PROGMEM ManufacturerString =
  */
 const USB_Descriptor_String_t PROGMEM ProductString =
 {
-    .Header                 = {.Size = USB_STRING_LEN(15), .Type = DTYPE_String},
+    .Header                 = {.Size = USB_STRING_LEN(14), .Type = DTYPE_String},
 
     .UnicodeString          = L"Chameleon-Mini"
 };
