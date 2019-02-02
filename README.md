@@ -29,6 +29,8 @@ distribution for our purposes here include the following file lists:
 
 * **./Firmware/Chameleon-Mini/ChameleonCrypto.cpp/h** : The bulk of our new routine support stems 
 from the functions defined and implemented here;
+* **./Firmware/Chameleon-Mini/ChipLocking.cpp/h** : Enable / disable (authed) locking of the ATMega 
+chips found onboard the Chameleon Mini boards;
 * **./Firmware/Chameleon-Mini/Configuration.h** : Added the built-in *KeyData* field in the 
 *ConfigurationType* struct (i.e., in the usual *ActiveConfiguration* variable referenced in many 
 places throughout the firmware code); 
@@ -79,6 +81,7 @@ Additionally, we have included the following defines configured via the customiz
 *Makefile* setup we have created here:
 ```
 ## Specify the default passphrase needed to flash / lock / unlock the device:
+SETTINGS        += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key storage data for debugging?
 SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"MyFlashLockPwd11\"
 SETTINGS        += -DPRIu16=\"PRIu16\"
 ```
