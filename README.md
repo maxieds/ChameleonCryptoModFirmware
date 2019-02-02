@@ -235,6 +235,22 @@ TODO
 TODO
 
 
+## New command: LOCK_CHIP
+
+### Description
+
+### Usage
+
+### Example
+
+## New command: UNLOCK_CHIP
+
+### Description
+
+### Usage
+
+### Example
+
 # Testing and crypto dump utilities
 
 

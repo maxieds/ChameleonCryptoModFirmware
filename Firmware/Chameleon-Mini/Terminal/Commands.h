@@ -28,7 +28,8 @@
 #define COMMAND_ERR_TIMEOUT_ID		203
 #define COMMAND_ERR_TIMEOUT		"TIMEOUT"
 #define TIMEOUT_COMMAND			255 // this is just for the CommandLine module to know that this is a timeout command
-
+#define COMMAND_ERR_AUTH_FAILED_ID      301
+#define COMMAND_ERR_AUTH_FAILED         "AUTHENTICATION FAILED"
 
 #define COMMAND_CHAR_TRUE           '1'
 #define COMMAND_CHAR_FALSE          '0'
@@ -192,7 +193,7 @@ CommandStatusIdType CommandGetField(char* OutMessage);
 #define COMMAND_CLONE  "CLONE"
 CommandStatusIdType CommandExecClone(char* OutMessage);
 
-/* ChameleonCrypto key handling commands: */
+/* ChameleonMiniCryptoBoard mod key handling commands: */
 #define COMMAND_KEYAUTH "KEYAUTH"
 CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InParams);
 
@@ -204,6 +205,13 @@ CommandStatusIdType CommandExecParamGenKey(char* OutMessage, const char *InParam
 
 #define COMMAND_GETKEY "GETKEY"
 CommandStatusIdType CommandExecParamGetKey(char* OutMessage, const char *InParams);
+
+/* ChameleonMiniCryptoBoard mod chip locking (hacking) commands: */
+#define COMMAND_LOCK_CHIP "LOCK_CHIP"
+CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InParam);
+
+#define COMMAND_UNLOCK_CHIP "UNLOCK_CHIP"
+CommandStatusIdType CommandExecParamUnlockChip(char *OutMessage, const char *InParam);
 
 #define COMMAND_LIST_END    ""
 /* Defines the end of command list. This is no actual command */

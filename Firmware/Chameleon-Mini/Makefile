@@ -80,8 +80,11 @@ SETTINGS        += -DDEFAULT_COUNTER_SIZE=4 # OR 0 if none needed
 SETTINGS        += -DBLOCK_CIPHER_TYPE_AES256
 
 ## Specify the default passphrase needed to flash / lock / unlock the device:
+FLASH_LOCK_PASSPHRASE = $(shell ./BuildScripts/GetUserFlashPassword.sh | tail -n 1)
 SETTINGS        += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key storage data for debugging?
-SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"MyFlashLockPwd11\"
+SETTINGS        += -DREQUIRE_PASSPHRASE_TO_LOCK_CHIP=0 # Descriptively named setting ... 
+SETTINGS        += -DENABLE_CHIP_UNLOCKING=1 # Let users unlock the chip (with passphrase auth)? 
+SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"$(FLASH_LOCK_PASSPHRASE)\"
 SETTINGS        += -DPRIu16=\"PRIu16\"
 
 #Memory definitions and objcopy flags to include sections in binaries
@@ -110,7 +113,7 @@ SRC         += $(TARGET).cpp LUFADescriptors.cpp System.cpp Configuration.cpp Ra
 SRC         += Terminal/Terminal.cpp Terminal/Commands.cpp Terminal/XModem.cpp Terminal/CommandLine.cpp
 SRC         += Codec/Codec.cpp Codec/ISO14443-2A.cpp Codec/Reader14443-2A.cpp Codec/SniffISO14443-2A.cpp Codec/Reader14443-ISR.S
 SRC         += Application/ISO14443-3A.cpp Application/Crypto1.cpp Application/MifareUltralight.cpp Application/MifareClassic.cpp Application/Reader14443A.cpp Application/Sniff14443A.cpp
-SRC         += ChameleonCrypto.cpp
+SRC         += ChameleonCrypto.cpp ChipLocking.cpp
 SRC         += $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = ../LUFA
 CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) -DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" -DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS) -IArduinoCryptoLib/libraries/Crypto -IArduinoCryptoLib/libraries/CryptoLegacy/src
@@ -132,7 +135,7 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 
 # Default target
-all: crypto_utils ArduinoCryptoLib/libCrypto.a %.hex %.bin
+all: crypto_utils ArduinoCryptoLib/libCrypto.a %.hex %.bin %.elf echo_flash_password
 
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
@@ -149,10 +152,12 @@ include $(LUFA_PATH)/Build/lufa_cppcheck.mk
 %.hex: %.elf
 	@echo $(MSG_OBJCPY_CMD) Extracting HEX file data from \"$<\"
 	$(CROSS)-objcopy -O ihex -R .eeprom -R .fuse -R .lock -R .signature $(FLASH_DATA_OBJCOPY) $< $@
+	@echo "USER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE)
 
 %.bin: %.elf
 	@echo $(MSG_OBJCPY_CMD) Extracting BIN file data from \"$<\"
 	$(CROSS)-objcopy -O binary -R .eeprom -R .fuse -R .lock -R .signature $(FLASH_DATA_OBJCOPY) $< $@
+	@echo "USER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE)
 
 # Extract SPMHelper in the last 32 Byte of the bootloader section to externally combine it with any bootloader
 spmhelper: $(TARGET).elf
@@ -200,3 +205,5 @@ crypto_utils:
 		-Wl,--start-group -Wl,--no-as-needed -std=c++11 -lstdc++ -frtti \
 		-L`readlink -f ../ArduinoCryptoLib` -lArduinoCryptoLinuxHostVersion
 
+echo_flash_password:
+	@echo "USER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE)

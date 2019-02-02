@@ -11,11 +11,16 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/eeprom.h>
+#include <avr/pgmspace.h>
+
 #ifdef DEFAULT_FLASH_LOCK_PASSPHRASE
-     static const char *FLASH_LOCK_PASSPHRASE = DEFAULT_FLASH_LOCK_PASSPHRASE;
+     static const char *FLASH_LOCK_PASSPHRASE EEMEM = DEFAULT_FLASH_LOCK_PASSPHRASE;
 #endif
 #ifndef DEFAULT_FLASH_LOCK_PASSPHRASE
-     static const char *FLASH_LOCK_PASSPHRASE = NULL; /* disabled */
+     static const char *FLASH_LOCK_PASSPHRASE EEMEM = NULL; /* disabled */
 #endif
 
 #include <avr/io.h>
@@ -23,10 +28,10 @@
 
 /* Chip locking routines */
 extern "C" { 
-     uint16_t ChameleonLockEEPROMMemoryBits(const char *authPwd = NULL);
-     uint16_t ChameleonUnlockEEPROMMemoryBits(const char *authPwd = NULL);
-     uint16_t ChameleonLockBootloaderMemoryBits(const char *authPwd = NULL);
-     uint16_t ChameleonUnlockBootloaderMemoryBits(const char *authPwd = NULL);
+     size_t ChameleonLockEEPROMMemoryBits();
+     size_t ChameleonUnlockEEPROMMemoryBits();
+     size_t ChameleonLockBootloaderMemoryBits();
+     size_t ChameleonUnlockBootloaderMemoryBits();
 }
 
 #endif

@@ -724,7 +724,7 @@ CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InPara
      if(!FLASH_LOCK_PASSPHRASE || strcmp(authPassphrase, FLASH_LOCK_PASSPHRASE)) { 
           strncpy(OutMessage, PSTR("Incorrect authentication passphrase specified."), TERMINAL_BUFFER_SIZE);
 	  free(InParamsCopy);
-	  return COMMAND_INFO_FALSE_ID;
+	  return COMMAND_ERR_AUTH_FAILED_ID;
      }
      ActiveConfiguration.KeyChangeAuth = numApprovedEdits;
      free(InParamsCopy);
@@ -735,7 +735,7 @@ CommandStatusIdType CommandExecParamSetKey(char *OutMessage, const char *InParam
      if(ActiveConfiguration.KeyChangeAuth <= 0) {
           strncpy(OutMessage, PSTR("Not authenticated to change the key data at this time."), 
 		  TERMINAL_BUFFER_SIZE);
-          return COMMAND_INFO_FALSE_ID;
+          return COMMAND_ERR_AUTH_FAILED_ID;
      }
      char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
      char *keyIdxParam = strtok(InParamsCopy, COMMAND_ARGSEP);
@@ -763,7 +763,7 @@ CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParam
      if(ActiveConfiguration.KeyChangeAuth <= 0) {
           strncpy(OutMessage, PSTR("Not authenticated to change the key data at this time."), 
 		  TERMINAL_BUFFER_SIZE);
-          return COMMAND_INFO_FALSE_ID;
+          return COMMAND_ERR_AUTH_FAILED_ID;
      }
      char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
      char *keyIdxParam = strtok(InParamsCopy, COMMAND_ARGSEP);
@@ -815,7 +815,7 @@ CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParam
           strncpy(OutMessage, PSTR("Incorrect authentication passphrase to view key specified."), 
 	          TERMINAL_BUFFER_SIZE);
 	  free(InParamsCopy);
-	  return COMMAND_ERR_INVALID_USAGE_ID;
+	  return COMMAND_ERR_AUTH_FAILED_ID;
      }
      free(InParamsCopy);
      InParamsCopy = NULL;
@@ -830,3 +830,32 @@ CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParam
      return COMMAND_INFO_OK_WITH_TEXT_ID;
 }
 #endif
+
+CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InParam) {
+     if(REQUIRE_PASSPHRASE_TO_LOCK_CHIP) { 
+          char *InParamCopy = (char *) malloc((strlen(InParam) + 1) * sizeof(char));
+	  strcpy(InParamCopy, InParam);
+	  char *authPwd = strtok(InParamCopy, COMMAND_ARGSEP);
+          if(authPwd == NULL || !FLASH_LOCK_PASSPHRASE || strcmp(authPwd, FLASH_LOCK_PASSPHRASE)) { 
+               strncpy(OutMessage, PSTR("Invalid flash password specified."), TERMINAL_BUFFER_SIZE);
+	       free(InParamCopy);
+	       return COMMAND_ERR_AUTH_FAILED_ID;
+	  }
+     }
+     ChameleonLockBootloaderMemoryBits();
+     ChameleonLockEEPROMMemoryBits();
+     return COMMAND_INFO_TRUE_ID;
+}
+
+CommandStatusIdType CommandExecParamUnlockChip(char *OutMessage, const char *InParam) { 
+     char *InParamCopy = (char *) malloc((strlen(InParam) + 1) * sizeof(char));
+     char *authPwd = strtok(InParamCopy, COMMAND_ARGSEP);
+     if(authPwd == NULL || !FLASH_LOCK_PASSPHRASE || strcmp(authPwd, FLASH_LOCK_PASSPHRASE)) { 
+          strncpy(OutMessage, PSTR("Invalid flash password specified."), TERMINAL_BUFFER_SIZE);
+	  free(InParamCopy);
+	  return COMMAND_ERR_AUTH_FAILED_ID;
+     }
+     ChameleonUnlockBootloaderMemoryBits();
+     ChameleonUnlockEEPROMMemoryBits();
+     return COMMAND_INFO_TRUE_ID;
+}

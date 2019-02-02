@@ -357,6 +357,20 @@ const PROGMEM CommandEntryType CommandTable[] = {
     NO_GET_FUNCTION
   },
 #endif 
+  {
+    COMMAND_LOCK_CHIP,
+    NO_EXEC_FUNCTION,
+    CommandExecParamLockChip, 
+    NO_SET_FUNCTION,
+    NO_GET_FUNCTION
+  },
+  {
+    COMMAND_UNLOCK_CHIP, 
+    NO_EXEC_FUNCTION,
+    CommandExecParamUnlockChip,
+    NO_SET_FUNCTION,
+    NO_GET_FUNCTION
+  },
   { /* This has to be last element */
     COMMAND_LIST_END,
     NO_EXEC_FUNCTION,
@@ -384,6 +398,7 @@ static const CommandStatusType PROGMEM StatusTable[] = {
   STATUS_TABLE_ENTRY(COMMAND_INFO_FALSE_ID, COMMAND_INFO_FALSE),
   STATUS_TABLE_ENTRY(COMMAND_INFO_TRUE_ID, COMMAND_INFO_TRUE),
   STATUS_TABLE_ENTRY(COMMAND_ERR_TIMEOUT_ID, COMMAND_ERR_TIMEOUT),
+  STATUS_TABLE_ENTRY(COMMAND_ERR_AUTH_FAILED_ID, COMMAND_ERR_AUTH_FAILED),
 };
 
 static uint16_t BufferIdx;
