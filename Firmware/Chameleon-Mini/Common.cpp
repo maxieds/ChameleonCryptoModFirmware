@@ -84,6 +84,14 @@ uint16_t HexStringToBuffer(void* Buffer, uint16_t MaxBytes, const char* HexIn)
     return ByteCount;
 }
 
+size_t IntegerToStringBuffer(uint16_t IntegerDataValue, char *DestStringBuffer, size_t MaxBufferBytes) { 
+     if(DestStringBuffer == NULL) { 
+          return 0;
+     }
+     size_t strBufferBytes = snprintf(DestStringBuffer, MaxBufferBytes, "%x\0", IntegerDataValue);
+     return strBufferBytes;
+}
+
 uint8_t BitReverseByte(uint8_t Byte)
 {
     extern const uint8_t PROGMEM BitReverseByteTable[];

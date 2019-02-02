@@ -5,10 +5,13 @@
 
 #include <stdlib.h>
 
+#include <SHA3.h>
+
 #include "ChameleonCrypto.h"
 #include "Configuration.h"
 #include "Terminal/Commands.h"
 #include "Terminal/Terminal.h"
+#include "System.h"
 
 uint8_t CryptoUploadBuffer[MEMORY_SIZE_PER_SETTING];
 uint16_t CryptoUploadBufferByteCount;
@@ -47,9 +50,8 @@ bool SetKeyData(KeyData_t &keyDataStruct, size_t keyIndex, uint8_t *keyData, siz
      else if(keyDataStruct.keyLengths[keyIndex] < keyLength) {
           keyDataStruct.keys[keyIndex] = (uint8_t *) realloc(keyDataStruct.keys[keyIndex], keyLength);
      }
-     for(int b = 0; b < keyLength; b++) { 
-          keyDataStruct.keys[keyIndex][b] = keyData[b];
-     }
+     memcpy(keyDataStruct.keys[keyIndex], keyData, keyLength);
+     keyDataStruct.keyLengths[keyIndex] = keyLength;
      WriteEEPBlock(EEP_KEY_DATA_START, &keyDataStruct, sizeof(keyDataStruct)); // store "forever" 
      return true;
 }
@@ -71,6 +73,31 @@ bool KeyIsValid(KeyData_t &keyDataStruct, size_t keyIndex) {
           return false;
      }
      return keyDataStruct.keys[keyIndex] != NULL;
+}
+
+size_t PassphraseToAESKeyData(const char *passphrase, uint8_t *keyDataBuffer, size_t maxKeyDataBytes, 
+		              bool useTickTimeSalt) { 
+     if(passphrase == NULL || keyDataBuffer == NULL) { 
+          return 0;
+     }
+     size_t pphLength = strlen(passphrase);
+     SHA3_256 pphHasherObj;
+     pphHasherObj.clear();
+     pphHasherObj.resetHMAC(passphrase, pphLength);
+     pphHasherObj.update(passphrase, pphLength);
+     if(useTickTimeSalt) { 
+          uint16_t tickTime = SystemGetSysTick();
+	  char tickTimeStrBuffer[TERMINAL_BUFFER_SIZE];
+	  size_t tickTimeStrLength = IntegerToStringBuffer(tickTime, tickTimeStrBuffer, 
+			                                   TERMINAL_BUFFER_SIZE);
+	  pphHasherObj.update(tickTimeStrBuffer, tickTimeStrLength);
+     }
+     size_t KeyDataByteCount = MIN(MIN(TERMINAL_BUFFER_SIZE, BLOCK_CIPHER_KEY_BYTE_SIZE), 256);
+     uint8_t keyDataHash[KeyDataByteCount];
+     pphHasherObj.finalizeHMAC(passphrase, pphLength, keyDataHash, KeyDataByteCount);
+     size_t copyNumBytes = MIN(maxKeyDataBytes, pphHasherObj.hashSize());
+     memcpy(keyDataBuffer, keyDataHash, copyNumBytes);
+     return copyNumBytes;
 }
 
 Cipher_t CreateBlockCipherObject(const uint8_t *keyData, size_t keyLength, 

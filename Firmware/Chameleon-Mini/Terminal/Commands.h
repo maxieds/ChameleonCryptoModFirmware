@@ -109,7 +109,6 @@ CommandStatusIdType CommandSetLButton(char* OutMessage, const char* InParam);
 CommandStatusIdType CommandGetLButtonLong(char* OutParam);
 CommandStatusIdType CommandSetLButtonLong(char* OutMessage, const char* InParam);
 
-
 #define COMMAND_LEDGREEN     "LEDGREEN"
 CommandStatusIdType CommandGetLedGreen(char* OutParam);
 CommandStatusIdType CommandSetLedGreen(char* OutMessage, const char* InParam);
@@ -191,6 +190,16 @@ CommandStatusIdType CommandGetField(char* OutMessage);
 
 #define COMMAND_CLONE  "CLONE"
 CommandStatusIdType CommandExecClone(char* OutMessage);
+
+/* ChameleonCrypto key handling commands: */
+#define COMMAND_SETKEY "SETKEY"
+CommandStatusIdType CommandExecParamSetKey(char* OutMessage, const char *InParams);
+
+#define COMMAND_GENKEY "GENKEY"
+CommandStatusIdType CommandExecParamGenKey(char* OutMessage, const char *InParams);
+
+#define COMMAND_GETKEY "GETKEY"
+CommandStatusIdType CommandExecParamGetKey(char* OutMessage, const char *InParams);
 
 #define COMMAND_LIST_END    ""
 /* Defines the end of command list. This is no actual command */

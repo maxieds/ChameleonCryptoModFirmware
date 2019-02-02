@@ -327,6 +327,29 @@ const PROGMEM CommandEntryType CommandTable[] = {
     NO_SET_FUNCTION,
     NO_GET_FUNCTION
   },
+  {
+    COMMAND_SETKEY,
+    NO_EXEC_FUNCTION,
+    CommandExecParamSetKey,
+    NO_SET_FUNCTION,
+    NO_GET_FUNCTION
+  },
+  {
+    COMMAND_GENKEY,
+    NO_EXEC_FUNCTION,
+    CommandExecParamGenKey,
+    NO_SET_FUNCTION,
+    NO_GET_FUNCTION
+  },
+#ifdef ENABLE_ADMIN_LEVEL_DEBUGGING
+  {
+    COMMAND_GETKEY, 
+    NO_EXEC_FUNCTION, 
+    CommandExecParamGetKey, 
+    NO_SET_FUNCTION, 
+    NO_GET_FUNCTION
+  },
+#endif 
   { /* This has to be last element */
     COMMAND_LIST_END,
     NO_EXEC_FUNCTION,

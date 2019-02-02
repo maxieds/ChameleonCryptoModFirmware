@@ -80,6 +80,7 @@ SETTINGS        += -DDEFAULT_COUNTER_SIZE=4 # OR 0 if none needed
 SETTINGS        += -DBLOCK_CIPHER_TYPE_AES256
 
 ## Specify the default passphrase needed to flash / lock / unlock the device:
+SETTINGS        += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key storage data for debugging?
 SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"MyFlashLockPwd11\"
 SETTINGS        += -DPRIu16=\"PRIu16\"
 
@@ -181,6 +182,6 @@ dfu-prog: $(TARGET).hex $(TARGET).eep
 	dfu-programmer $(MCU) reset
 
 ArduinoCryptoLib/libCrypto.a:
-	cd ArduinoCryptoLib/host/Crypto && make clean && make
+	cd ArduinoCryptoLib/host/Crypto && make
 	cp ArduinoCryptoLib/host/Crypto/libCrypto.a ArduinoCryptoLib/libArduinoCrypto.a
 

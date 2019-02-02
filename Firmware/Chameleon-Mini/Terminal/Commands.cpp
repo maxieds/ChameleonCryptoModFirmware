@@ -1,9 +1,12 @@
-
-#include "Commands.h"
 #include <stdlib.h>
 #include <stdio.h>
+
 #include <avr/pgmspace.h>
 #include <Settings.h>
+
+#include <SHA3.h>
+
+#include "Commands.h"
 #include "XModem.h"
 #include "../Settings.h"
 #include "../Chameleon-Mini.h"
@@ -16,9 +19,8 @@
 #include "../AntennaLevel.h"
 #include "../Battery.h"
 #include "../Codec/Codec.h"
-
-//Reader14443Command Reader14443CurrentCommand;
-//Sniff14443Command Sniff14443CurrentCommand;
+#include "../ChameleonCrypto.h"
+#include "../ChipLocking.h"
 
 CommandStatusIdType CommandGetVersion(char* OutParam)
 {
@@ -138,48 +140,57 @@ CommandStatusIdType CommandExecParamUploadEncrypted(char *outMessage, const char
      char *keyIndex = strtok(InParamsCopy, " ");
      if(keyIndex == NULL) {
 	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE); 
-          return COMMAND_ERR_INVALID_PARAM_ID;
+          free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
      char *keyData = strtok(NULL, " ");
      if(keyData == NULL) {
 	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE);
-          return COMMAND_ERR_INVALID_PARAM_ID;
+          free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
      char *timestampSalt = strtok(NULL, " ");
      if(timestampSalt == NULL) {
 	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE);
-          return COMMAND_ERR_INVALID_PARAM_ID;
+          free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
      
      size_t keyIndexNum = atoi(keyIndex);
      if(keyIndexNum < 0 || keyIndexNum >= NUM_KEYS_STORAGE) {
-         snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
-                    PSTR("Key index #%d out of range. Try keys indexed 0-%d."), 
-		    keyIndexNum, NUM_KEYS_STORAGE - 1);
-          return COMMAND_ERR_INVALID_PARAM_ID;
+          snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
+                     PSTR("Key index #%d out of range. Try keys indexed 0-%d."), 
+	              keyIndexNum, NUM_KEYS_STORAGE - 1);
+          free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
      size_t keyDataByteCount = 0, saltDataByteCount = 0;
      uint8_t *LocalKeyData = GetKeyDataFromString(keyData, &keyDataByteCount);
      if(!LocalKeyData) { 
           snprintf_P(outMessage, TERMINAL_BUFFER_SIZE, 
 	             PSTR("Supplied key data (\"%s\") is invalid."), keyData);
+	  free(InParamsCopy);
 	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
      else if(keyDataByteCount != ActiveConfiguration.KeyData.keyLengths[keyIndexNum]) { 
           snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
                     PSTR("Key #%d input byte count does not match the actual key length."), 
 		    keyIndexNum); 
-          return COMMAND_ERR_INVALID_PARAM_ID;
+          free(InParamsCopy);
+	  free(LocalKeyData);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
      else if(strncmp((const char *) ActiveConfiguration.KeyData.keys[keyIndexNum], 
 		     (const char *) LocalKeyData, 
 		     keyDataByteCount)) { 
-          free(LocalKeyData);
           snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
                     PSTR("Key #%d input [%s] does not match stored key."), 
 		    keyIndexNum, keyData); 
+          free(InParamsCopy);
+	  free(LocalKeyData);
           return COMMAND_ERR_INVALID_PARAM_ID;
      }
+     free(InParamsCopy);
      free(LocalKeyData);
      uint8_t *LocalIVSaltData = GetKeyDataFromString(timestampSalt, &saltDataByteCount);
      XModemReceiveEncrypted(CryptoMemoryUploadBlock, keyIndexNum, 
@@ -724,3 +735,90 @@ CommandStatusIdType CommandExecClone(char *OutMessage)
 
     return TIMEOUT_COMMAND;
 }
+
+CommandStatusIdType CommandExecParamSetKey(char *OutMessage, const char *InParams) { 
+     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
+     char *keyIdxParam = strtok(InParamsCopy, " ");
+     int keyIndex = 0;
+     if(keyIdxParam == NULL || ((keyIndex = atoi(keyIdxParam)) < 0) || (keyIndex >= NUM_KEYS_STORAGE)) { 
+          strncpy(OutMessage, "Missing or invalid KeyIndex parameter.", TERMINAL_BUFFER_SIZE);
+	  free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     char *keyDataParam = strtok(InParamsCopy, " ");
+     if(keyDataParam == NULL) { 
+         strncpy(OutMessage, "Missing or invalid KeyData parameter.", TERMINAL_BUFFER_SIZE);
+	 free(InParamsCopy);
+	 return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     uint8_t keyDataBytes[TERMINAL_BUFFER_SIZE];
+     uint16_t keyDataByteCount = HexStringToBuffer(keyDataBytes, TERMINAL_BUFFER_SIZE, keyDataParam);
+     SetKeyData(ActiveConfiguration.KeyData, keyIndex, keyDataBytes, keyDataByteCount);
+     free(InParamsCopy);
+     return COMMAND_INFO_OK_ID;
+}
+
+CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParams) { 
+     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
+     char *keyIdxParam = strtok(InParamsCopy, " ");
+     int keyIndex = 0;
+     if(keyIdxParam == NULL || ((keyIndex = atoi(keyIdxParam)) < 0) || (keyIndex >= NUM_KEYS_STORAGE)) { 
+          strncpy(OutMessage, "Missing or invalid KeyIndex parameter.", TERMINAL_BUFFER_SIZE);
+	  free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     char *genPassphraseParam = strtok(InParamsCopy, " ");
+     if(genPassphraseParam == NULL) { 
+         strncpy(OutMessage, "Missing or invalid AuthPassphrase parameter.", TERMINAL_BUFFER_SIZE);
+	 free(InParamsCopy);
+	 return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     uint8_t keyData[TERMINAL_BUFFER_SIZE];
+     uint16_t keyDataByteCount = PassphraseToAESKeyData(genPassphraseParam, keyData, 
+		                                        TERMINAL_BUFFER_SIZE, true);
+     if(!keyData) { 
+          strncpy(OutMessage, "Error generating AES key data from passphrase.", TERMINAL_BUFFER_SIZE);
+	  free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_USAGE_ID;
+     }
+     SetKeyData(ActiveConfiguration.KeyData, keyIndex, keyData, keyDataByteCount);
+     BufferToHexString(OutMessage, TERMINAL_BUFFER_SIZE, keyData, keyDataByteCount);
+     free(InParamsCopy);
+     return COMMAND_INFO_OK_WITH_TEXT_ID;
+}
+
+#ifdef ENABLE_ADMIN_LEVEL_DEBUGGING
+CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParams) { 
+     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
+     char *keyIdxParam = strtok(InParamsCopy, " ");
+     int keyIndex = 0;
+     if(keyIdxParam == NULL || ((keyIndex = atoi(keyIdxParam)) < 0) || (keyIndex >= NUM_KEYS_STORAGE)) { 
+          strncpy(OutMessage, "Missing or invalid KeyIndex parameter.", TERMINAL_BUFFER_SIZE);
+	  free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     char *authKeyParam = strtok(InParamsCopy, " ");
+     if(authKeyParam == NULL) { 
+         strncpy(OutMessage, "Missing or invalid AuthPassphrase parameter.", TERMINAL_BUFFER_SIZE);
+	 free(InParamsCopy);
+	 return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     else if(!FLASH_LOCK_PASSPHRASE || strcmp(authKeyParam, FLASH_LOCK_PASSPHRASE)) { 
+          strncpy(OutMessage, "Incorrect authentication passphrase to view key specified.", 
+	          TERMINAL_BUFFER_SIZE);
+	  free(InParamsCopy);
+	  return COMMAND_ERR_INVALID_USAGE_ID;
+     }
+     free(InParamsCopy);
+     InParamsCopy = NULL;
+     if(ActiveConfiguration.KeyData.keyLengths[keyIndex] > TERMINAL_BUFFER_SIZE) { 
+          strncpy(OutMessage, "Terminal buffer size is insufficient to display key data", 
+	          TERMINAL_BUFFER_SIZE);
+	  return COMMAND_ERR_INVALID_USAGE_ID;
+     }
+     BufferToHexString(OutMessage, TERMINAL_BUFFER_SIZE, 
+	               ActiveConfiguration.KeyData.keys[keyIndex], 
+		       ActiveConfiguration.KeyData.keyLengths[keyIndex]);
+     return COMMAND_INFO_OK_WITH_TEXT_ID;
+}
+#endif
