@@ -271,8 +271,9 @@ void XModemTick(void)
 		LocalIVSaltData, LocalIVSaltDataByteCount);
 	    uint8_t *ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
 		      	                         CryptoUploadBufferByteCount);
-	    if(ptextBuf != NULL) { 
-	        MemoryUploadBlock((void *) ptextBuf, 0, CryptoUploadBufferByteCount);
+	    if(ptextBuf != NULL && ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 
+	        MemoryUploadBlock((void *) (ptextBuf + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
+				  CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
 	        free(ptextBuf);
 	    }
 	    else { // we need to try TIMESTAMP+/-1 to account for timing errors (Sigh...):
@@ -292,8 +293,9 @@ void XModemTick(void)
 		              nextTimeBytes, nextTimeByteCount);
 		     ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
 				                 CryptoUploadBufferByteCount);
-		     if(ptextBuf != NULL) { 
-		          MemoryUploadBlock((void *) ptextBuf, 0, CryptoUploadBufferByteCount);
+		     if(ptextBuf != NULL && ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 
+		          MemoryUploadBlock((void *) (ptextBuf + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
+					    CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
 			  free(ptextBuf);
 			  break;
 		     }

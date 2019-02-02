@@ -17,8 +17,20 @@ uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE] EEMEM;
 uint16_t CryptoUploadBufferByteCount EEMEM;
 
 void InitCryptoDumpBuffer() { 
-     memset(CryptoUploadBuffer, 0, MEMORY_SIZE_PER_SETTING);
+     memset(CryptoUploadBuffer, 0, CRYPTO_UPLOAD_HEADER_SIZE + CRYPTO_UPLOAD_BUFSIZE);
      CryptoUploadBufferByteCount = 0;
+}
+
+bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength) { 
+     if(bufLength <= CRYPTO_UPLOAD_HEADER_SIZE || dumpDataBuf == NULL) { 
+          return false;
+     }
+     char dumpHeaderBytes[CRYPTO_UPLOAD_HEADER_SIZE];
+     memcpy(dumpHeaderBytes, dumpDataBytes, CRYPTO_UPLOAD_HEADER_SIZE);
+     if(strncmp(dumpHeaderBytes, CRYPTO_UPLOAD_HEADER, CRYPTO_UPLOAD_HEADER_SIZE)) { 
+          return false;
+     }
+     return true;
 }
 
 uint8_t * GetKeyDataFromString(const char *byteString, size_t *byteBufLengthParam) { 

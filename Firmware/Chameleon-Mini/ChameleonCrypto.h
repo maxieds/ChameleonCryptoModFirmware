@@ -57,11 +57,14 @@ typedef struct {
 #define EEP_KEY_DATA_START        (FRAM_LOG_START_ADDR + FRAM_LOG_SIZE + 1)
 #define EEP_KEY_DATA_END          (EEP_KEY_DATA_START + EEP_KEY_DATA_SIZE)
 
+#define CRYPTO_UPLOAD_HEADER      PSTR("MFCLASSIC1K-DUMPIMAGE::\n")
+#define CRYPTO_UPLOAD_HEADER_SIZE strlen(CRYPTO_UPLOAD_HEADER)
 #define CRYPTO_UPLOAD_BUFSIZE     (1024) // for MF1K dump sizes
-extern uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE] EEMEM;
-extern uint16_t CryptoUploadBufferByteCount EEMEM;
+extern uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_HEADER_SIZE + CRYPTO_UPLOAD_BUFSIZE] EEMEM;
+extern size_t CryptoUploadBufferByteCount EEMEM;
 
 void InitCryptoDumpBuffer();
+bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength);
 
 uint8_t * GetKeyDataFromString(const char *byteString, size_t *byteCount);
 bool SetKeyData(KeyData_t &keyDataStruct, size_t keyIndex, uint8_t *keyData, size_t keyLength);
