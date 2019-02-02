@@ -234,6 +234,13 @@ TODO
 
 TODO
 
+## New command: UPLOAD_STATUS
+
+### Description
+
+### Usage
+
+### Example
 
 ## New command: LOCK_CHIP
 
