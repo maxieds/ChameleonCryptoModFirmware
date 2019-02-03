@@ -18,7 +18,7 @@
 #include "ChameleonCrypto.h"
 #include "ChipLocking.h"
 
-#define SETTINGS_COUNT		4 // (MAX(1, (MEMORY_SIZE / MEMORY_SIZE_PER_SETTING) - 4))
+#define SETTINGS_COUNT		(MEMORY_SIZE / MEMORY_SIZE_PER_SETTING)
 #define SETTINGS_FIRST		1
 #define SETTINGS_LAST		(SETTINGS_FIRST + SETTINGS_COUNT - 1)
 

@@ -20,13 +20,13 @@ SETTINGS	+= -DSUPPORT_MF_CLASSIC_MAGIC_MODE
 SETTINGS	+= -DSUPPORT_UID7_FIX_MANUFACTURER_BYTE
 
 #Support activating firmware upgrade mode through command-line
-#SETTINGS	+= -DSUPPORT_FIRMWARE_UPGRADE
+SETTINGS	+= -DSUPPORT_FIRMWARE_UPGRADE
 
 #Default configuration
-SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_CLASSIC_1K
+#SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_CLASSIC_1K
 #SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_CLASSIC_4K
 #SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_ULTRALIGHT
-#SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_NONE
+SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_NONE
 #SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_ISO14443A_READER
 
 #Default button actions
@@ -84,16 +84,15 @@ SETTINGS        += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key
 SETTINGS        += -DREQUIRE_PASSPHRASE_TO_LOCK_CHIP=0 # Descriptively named setting ... 
 SETTINGS        += -DENABLE_CHIP_UNLOCKING=1 # Let users unlock the chip (with passphrase auth)? 
 SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"$(FLASH_LOCK_PASSPHRASE)\"
-SETTINGS        += -DALWAYS_DIFFTIME_COMMANDS=1
 SETTINGS        += -DPRIu16=\"PRIu16\"
 
 #Memory definitions and objcopy flags to include sections in binaries
-FLASH_DATA_ADDR = 0x10000 #Start of data section in flash
-FLASH_DATA_SIZE = 0x10000 #Size of data section in flash
+FLASH_DATA_ADDR = 0x1000 #Start of data section in flash
+FLASH_DATA_SIZE = 0xffa0 #Size of data section in flash
 FLASH_DATA_OBJCOPY = --set-section-flags=.flashdata="alloc,load"
 SPM_HELPER_ADDR = 0x21FE0 #Start of SPM helper section. Should be last 32Byte in bootloader section
 SPM_HELPER_OBJCOPY = --set-section-flags=.spmhelper="alloc,load"
-EEMEM_DATA_ADDR = 0x810000
+#EEMEM_DATA_ADDR = 0x810000
 #EEMEM_DATA_SIZE = 0xfff0
 #TEXT_DATA_SIZE = 0xfff0
 
@@ -111,11 +110,11 @@ F_CPU        = 27120000
 F_USB        = 48000000
 TARGET       = Chameleon-Mini-Crypto-Board
 OPTIMIZATION = s
-SRC         += $(TARGET).cpp LUFADescriptors.cpp System.cpp Configuration.cpp Random.cpp Common.cpp Memory.cpp MemoryAsm.S Button.cpp Log.cpp Settings.cpp LED.cpp Map.cpp AntennaLevel.cpp
-SRC         += Terminal/Terminal.cpp Terminal/Commands.cpp Terminal/XModem.cpp Terminal/CommandLine.cpp
-SRC         += Codec/Codec.cpp Codec/ISO14443-2A.cpp Codec/Reader14443-2A.cpp Codec/SniffISO14443-2A.cpp Codec/Reader14443-ISR.S
-SRC         += Application/ISO14443-3A.cpp Application/Crypto1.cpp Application/MifareUltralight.cpp Application/MifareClassic.cpp Application/Reader14443A.cpp Application/Sniff14443A.cpp
-SRC         += ChameleonCrypto.cpp ChipLocking.cpp
+SRC         += $(TARGET).c LUFADescriptors.c System.c Configuration.c Random.c Common.c Memory.c MemoryAsm.S Button.c Log.c Settings.c LED.c Map.c AntennaLevel.c
+SRC         += Terminal/Terminal.c Terminal/Commands.c Terminal/XModem.c Terminal/CommandLine.c
+SRC         += Codec/Codec.c Codec/ISO14443-2A.c Codec/Reader14443-2A.c Codec/SniffISO14443-2A.c Codec/Reader14443-ISR.S
+SRC         += Application/ISO14443-3A.c Application/Crypto1.c Application/MifareUltralight.c Application/MifareClassic.c Application/Reader14443A.c Application/Sniff14443A.c
+SRC         += ChameleonCrypto.c ChipLocking.c
 SRC         += $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = ../LUFA
 CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) \
@@ -123,10 +122,8 @@ CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DF
 		#-IArduinoCryptoLib/libraries/Crypto -IArduinoCryptoLib/libraries/CryptoLegacy/src
 		#-DEEMEM_DATA_ADDR=$(EEMEM_DATA_ADDR)
 		#-D__EEPROM_REGION_LENGTH__=$(EEMEM_DATA_SIZE) -D__TEXT_REGION_LENGTH__=$(TEXT_DATA_SIZE) 
-LD_FLAGS     =  -Wl,--start-group -Wl,--no-as-needed \
-		-Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) \
-		-Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR) \
-		-Wl,--section-start=.eeprom=$(EEMEM_DATA_ADDR)
+LD_FLAGS     =  -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) \
+		-Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR)
 OBJDIR       = Bin
 OBJECT_FILES = 
 

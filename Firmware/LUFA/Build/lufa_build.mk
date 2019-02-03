@@ -214,10 +214,12 @@ BASE_CPP_FLAGS := -x c++ -O$(OPTIMIZATION) -std=$(CPP_STANDARD)
 BASE_ASM_FLAGS := -x assembler-with-cpp
 
 # Create a list of flags to pass to the linker
-BASE_LD_FLAGS := -Wl,--no-as-needed -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections \
-			-nodefaultlibs -nostdlib -static-libgcc -lm \
-			/usr/lib/avr/lib/avrxmega7/libatxmega128a4u.a \
-			-T /usr/lib/avr/lib/ldscripts/avrxmega7.x
+BASE_LD_FLAGS := -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections \
+			#-T /usr/lib/avr/lib/ldscripts/avrxmega7.x
+			#-nodefaultlibs -nostdlib -L/usr/lib/avr/lib/avrxmega7/lib -lc -lm \
+			#/usr/lib/avr/lib/avrxmega7/libatxmega128a4u.a #\
+			#-nodefaultlibs -nostdlib -static-libgcc -lm \
+
 ifeq ($(LINKER_RELAXATIONS), Y)
    BASE_LD_FLAGS += -Wl,--relax
 endif

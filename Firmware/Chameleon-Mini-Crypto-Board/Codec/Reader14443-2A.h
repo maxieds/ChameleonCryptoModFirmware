@@ -20,8 +20,6 @@ void Reader14443ACodecTask(void);
 void Reader14443ACodecStart(void);
 void Reader14443ACodecReset(void);
 
-extern "C" {
-    void Reader14443AMillerEOC(void);
-}
+void Reader14443AMillerEOC(void);
 
 #endif /* READER14443_2A_H_ */

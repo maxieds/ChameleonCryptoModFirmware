@@ -31,11 +31,9 @@ INLINE bool AuthLockByPassphrase(const char *authPwd) {
 }
 
 /* Chip locking routines */
-extern "C" { 
-     size_t ChameleonLockEEPROMMemoryBits();
-     size_t ChameleonUnlockEEPROMMemoryBits();
-     size_t ChameleonLockBootloaderMemoryBits();
-     size_t ChameleonUnlockBootloaderMemoryBits();
-}
+size_t ChameleonLockEEPROMMemoryBits();
+size_t ChameleonUnlockEEPROMMemoryBits();
+size_t ChameleonLockBootloaderMemoryBits();
+size_t ChameleonUnlockBootloaderMemoryBits();
 
 #endif

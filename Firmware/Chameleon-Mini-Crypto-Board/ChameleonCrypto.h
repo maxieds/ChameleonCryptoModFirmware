@@ -62,8 +62,6 @@ typedef struct {
      size_t keyLengths[NUM_KEYS_STORAGE];
 } KeyData_t;
 
-extern const KeyData_t DEFAULT_KEY_DATA;
-
 #define CRYPTO_UPLOAD_HEADER      "MFCLASSIC1K-DUMPIMAGE::\n"
 #define CRYPTO_UPLOAD_HEADER_SIZE (24)
 #define CRYPTO_UPLOAD_BUFSIZE     (1024 + CRYPTO_UPLOAD_HEADER_SIZE) // for MF1K dump sizes
@@ -78,7 +76,8 @@ uint8_t * GetKeyDataFromString(const char *byteString, size_t *byteCount);
 bool SetKeyData(size_t keyIndex, uint8_t *keyData, size_t keyLength);
 bool ZeroFillKeyData(size_t keyIndex, size_t keyLength);
 bool KeyIsValid(size_t keyIndex); 
-size_t PassphraseToAESKeyData(const char *passphrase, uint8_t *keyDataBuffer, size_t maxKeyDataBytes, 		                                  bool useTickTimeSalt = true);
+size_t PassphraseToAESKeyData(const char *passphrase, uint8_t *keyDataBuffer, 
+		              size_t maxKeyDataBytes, bool useTickTimeSalt);
 
 Cipher_t CreateBlockCipherObject(const uint8_t *keyData, size_t keyLength, 
 		                 const uint8_t *initVecData, size_t ivLength);

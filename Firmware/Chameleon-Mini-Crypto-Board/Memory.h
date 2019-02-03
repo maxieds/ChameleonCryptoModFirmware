@@ -33,14 +33,12 @@ uint16_t WriteEEPBlock(uint16_t Address, const void *SrcPtr, uint16_t ByteCount)
 uint16_t ReadEEPBlock(uint16_t Address, void *DestPtr, uint16_t ByteCount);
 
 /* Declarations from assembler file */
-extern "C" {
-    uint16_t FlashReadWord(uint32_t Address);
-    void FlashEraseApplicationPage(uint32_t Address);
-    void FlashLoadFlashWord(uint16_t Address, uint16_t Data);
-    void FlashEraseWriteApplicationPage(uint32_t Address);
-    void FlashEraseFlashBuffer(void);
-    void FlashWaitForSPM(void);
-}
+uint16_t FlashReadWord(uint32_t Address);
+void FlashEraseApplicationPage(uint32_t Address);
+void FlashLoadFlashWord(uint16_t Address, uint16_t Data);
+void FlashEraseWriteApplicationPage(uint32_t Address);
+void FlashEraseFlashBuffer(void);
+void FlashWaitForSPM(void);
 
 #endif /* __ASSEMBLER__ */
 
