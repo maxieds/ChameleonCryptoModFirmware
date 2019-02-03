@@ -75,4 +75,6 @@
 //        #define NO_DEVICE_REMOTE_WAKEUP
 //        #define NO_DEVICE_SELF_POWER
 
+size_t GetChameleonBoardUSBSerial(char *serialStrBuf, size_t maxBufBytes);
+
 #endif

@@ -35,9 +35,13 @@
  *  the device's capabilities and functions.
  */
 
-#include "Chameleon-Mini-Crypto-Board.h"
-#include "LUFADescriptors.h"
 #include <LUFA/Version.h>
+#include <LUFA/Drivers/USB/USB.h>
+
+#include "Chameleon-Mini-Crypto-Board.h"
+#include "LUFAConfig.h"
+#include "LUFADescriptors.h"
+#include "ChameleonCrypto.h"
 
 /** Device descriptor structure. This descriptor, located in FLASH memory, describes the overall
  *  device characteristics, including the supported USB version, control endpoint size and the
@@ -271,5 +275,16 @@ uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
 
     *DescriptorAddress = Address;
     return Size;
+}
+
+size_t GetChameleonBoardUSBSerial(char *serialStrBuf, size_t maxBufBytes) {
+     if(serialStrBuf == NULL) {
+          return 0;
+     }
+     uint16_t fullSerialStr[MAX_KEY_LENGTH];
+     USB_Device_GetSerialString((uint16_t *) fullSerialStr);
+     size_t serialBytes = strlen((uint8_t *) fullSerialStr);
+     size_t byteCount = memcpy(serialStrBuf, fullSerialStr, MIN(serialBytes, maxBufBytes));
+     return byteCount;
 }
 

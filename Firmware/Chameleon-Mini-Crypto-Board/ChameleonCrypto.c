@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include <util/delay.h>
+#include <util/crc16.h>
 
 //#include <SHA3.h>
 
