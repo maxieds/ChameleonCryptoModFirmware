@@ -97,15 +97,16 @@ OPTIMIZATION       ?= 0
 F_CPU              ?=
 C_STANDARD         ?= gnu99 #gnu99
 CPP_STANDARD       ?= c++11
-C_FLAGS            ?= -g -gdwarf-2 -gstrict-dwarf
-CPP_FLAGS          ?= -Wall -Wextra -Wno-narrowing
+C_FLAGS            ?= -Waddr-space-convert #-g -gdwarf-2 -gstrict-dwarf
+CPP_FLAGS          ?= -Wall -Wextra -Wno-narrowing -Wformat -Wtrampolines \
+		      -Wstack-usage=2048 -fno-rtti
 ASM_FLAGS          ?=
-CC_FLAGS           ?= -g -gdwarf-2 -gstrict-dwarf
+CC_FLAGS           ?= #-g -gdwarf-2 -gstrict-dwarf
 OBJDIR             ?= .
 OBJECT_FILES       ?=
-DEBUG_FORMAT       ?= dwarf-2
-DEBUG_LEVEL        ?= 2
-LINKER_RELAXATIONS ?= N
+DEBUG_FORMAT       ?= gdb #dwarf-2
+DEBUG_LEVEL        ?= 0 #2
+LINKER_RELAXATIONS ?= Y
 
 # Sanity check user supplied values
 $(foreach MANDATORY_VAR, $(LUFA_BUILD_MANDATORY_VARS), $(call ERROR_IF_UNSET, $(MANDATORY_VAR)))
@@ -185,7 +186,9 @@ BASE_CC_FLAGS    := -pipe -g$(DEBUG_FORMAT) -g$(DEBUG_LEVEL)
 ifeq ($(ARCH), AVR8)
    BASE_CC_FLAGS += -mmcu=$(MCU) -fshort-enums -fno-inline-small-functions -fpack-struct
 else ifeq ($(ARCH), XMEGA)
-   BASE_CC_FLAGS += -mmcu=$(MCU) -fshort-enums -fno-inline-small-functions -fpack-struct
+   BASE_CC_FLAGS += -mmcu=$(MCU) -fshort-enums -fno-inline-small-functions -fpack-struct \
+		    -funsigned-char #\
+		    #-Wl,--defsym=__stack=0x803ff #-mdeb -mint8 -mno-interrupts
 else ifeq ($(ARCH), UC3)
    BASE_CC_FLAGS += -mpart=$(MCU:at32%=%) -masm-addr-pseudos
 endif
@@ -211,7 +214,10 @@ BASE_CPP_FLAGS := -x c++ -O$(OPTIMIZATION) -std=$(CPP_STANDARD)
 BASE_ASM_FLAGS := -x assembler-with-cpp
 
 # Create a list of flags to pass to the linker
-BASE_LD_FLAGS := -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections -nodefaultlibs -nostdlib -L/usr/lib/avr/lib/avrxmega7 /usr/lib/avr/lib/avrxmega7/*.a -L/usr/lib/avr/lib -lc -lm
+BASE_LD_FLAGS := -Wl,--no-as-needed -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections \
+			-nodefaultlibs -nostdlib -static-libgcc -lm \
+			/usr/lib/avr/lib/avrxmega7/libatxmega128a4u.a \
+			-T /usr/lib/avr/lib/ldscripts/avrxmega7.x
 ifeq ($(LINKER_RELAXATIONS), Y)
    BASE_LD_FLAGS += -Wl,--relax
 endif
@@ -251,15 +257,18 @@ symbol-sizes: $(TARGET).elf
 	@echo $(MSG_NM_CMD) Extracting \"$<\" symbols with decimal byte sizes
 	$(CROSS)-nm --size-sort --demangle --radix=d $<
 
+crefs: $(TARGET).elf
+	$(CROSS)-gcc -cref $<
+
 # Cleans intermediary build files, leaving only the compiled application files
 mostlyclean:
 	@echo $(MSG_REMOVE_CMD) Removing object files of \"$(TARGET)\"
 	rm -f $(OBJECT_FILES)
 	@echo $(MSG_REMOVE_CMD) Removing dependency files of \"$(TARGET)\"
 	rm -f $(DEPENDENCY_FILES)
-	make -f ArduinoCryptoLib/host/Crypto/Makefile clean
-	rm -f ArduinoCryptoLib/*.a
-	rm -f ChameleonCryptoUtils/*.{o,code} ChameleonCryptoUtils/UtilityBin/*
+	#make -f ArduinoCryptoLib/host/Crypto/Makefile clean
+	#rm -f ArduinoCryptoLib/*.a
+	#rm -f ChameleonCryptoUtils/*.{o,code} ChameleonCryptoUtils/UtilityBin/*
 
 # Cleans all build files, leaving only the original source code
 clean: mostlyclean
@@ -268,7 +277,7 @@ clean: mostlyclean
 		$(TARGET).eep $(TARGET).map $(TARGET).lss $(TARGET).sym lib$(TARGET).a
 
 # Performs a complete build of the user application and prints size information afterwards
-all: build_begin elf hex bin lss sym size build_end
+all: build_begin elf hex bin lss sym size echo_flash_password build_end
 
 # Helper targets, to build a specific type of output file without having to know the project target name
 lib: lib$(TARGET).a
@@ -291,7 +300,7 @@ $(SRC):
 # Compiles an input C++ source file and generates an assembly listing for it
 %.s: %.cpp $(MAKEFILE_LIST)
 	@echo $(MSG_COMPILE_CMD) Generating assembly from C++ file \"$(notdir $<)\"
-	$(CROSS)-g++ -S $(BASE_CC_FLAGS) $(BASE_CPP_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) $< -o $@
+	$(CROSS)-gcc -S $(BASE_CC_FLAGS) $(BASE_CPP_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) $< -o $@
 
 # Compiles an input C source file and generates a linkable object file for it
 $(OBJDIR)/%.o: %.c $(MAKEFILE_LIST)
@@ -301,12 +310,12 @@ $(OBJDIR)/%.o: %.c $(MAKEFILE_LIST)
 # Compiles an input C++ source file and generates a linkable object file for it
 $(OBJDIR)/%.o: %.cpp $(MAKEFILE_LIST)
 	@echo $(MSG_COMPILE_CMD) Compiling C++ file \"$(notdir $<)\"
-	$(CROSS)-g++ -c $(BASE_CC_FLAGS) $(BASE_CPP_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) -MMD -MP -MF $(@:%.o=%.d) $< -o $@
+	$(CROSS)-gcc -c $(BASE_CC_FLAGS) $(BASE_CPP_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) -MMD -MP -MF $(@:%.o=%.d) $< -o $@
 
 # Assembles an input ASM source file and generates a linkable object file for it
 $(OBJDIR)/%.o: %.S $(MAKEFILE_LIST)
 	@echo $(MSG_ASSEMBLE_CMD) Assembling \"$(notdir $<)\"
-	$(CROSS)-g++ -c $(BASE_CC_FLAGS) $(BASE_ASM_FLAGS) $(CC_FLAGS) $(ASM_FLAGS) -MMD -MP -MF $(@:%.o=%.d) $< -o $@
+	$(CROSS)-gcc -c $(BASE_CC_FLAGS) $(BASE_ASM_FLAGS) $(CC_FLAGS) $(ASM_FLAGS) -MMD -MP -MF $(@:%.o=%.d) $< -o $@
 
 # Generates a library archive file from the user application, which can be linked into other applications
 .PRECIOUS  : $(OBJECT_FILES)

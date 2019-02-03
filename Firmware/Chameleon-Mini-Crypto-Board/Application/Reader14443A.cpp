@@ -1,3 +1,7 @@
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 #include "Reader14443A.h"
 #include "Application.h"
 #include "../Codec/Reader14443-2A.h"

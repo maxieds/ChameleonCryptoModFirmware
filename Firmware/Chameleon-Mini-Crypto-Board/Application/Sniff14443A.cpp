@@ -4,8 +4,12 @@
 // Currently only support Autocalibrate
 //
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <stdbool.h>
+
 #include <LED.h>
+
 #include "Sniff14443A.h"
 #include "Codec/SniffISO14443-2A.h"
 extern bool checkParityBits(uint8_t * Buffer, uint16_t BitCount);
