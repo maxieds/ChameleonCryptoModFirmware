@@ -88,13 +88,14 @@ SETTINGS        += -DALWAYS_DIFFTIME_COMMANDS=1
 SETTINGS        += -DPRIu16=\"PRIu16\"
 
 #Memory definitions and objcopy flags to include sections in binaries
-FLASH_DATA_ADDR = 0x10000 #Start of data section in flash
-#FLASH_DATA_SIZE = 0x10000 #Size of data section in flash
-FLASH_DATA_SIZE = 0x10000 #Size of data section in flash
+FLASH_DATA_ADDR = 0x1000 #Start of data section in flash
+FLASH_DATA_SIZE = 0x1000 #Size of data section in flash
 FLASH_DATA_OBJCOPY = --set-section-flags=.flashdata="alloc,load"
 SPM_HELPER_ADDR = 0x21FE0 #Start of SPM helper section. Should be last 32Byte in bootloader section
 SPM_HELPER_OBJCOPY = --set-section-flags=.spmhelper="alloc,load"
 EEMEM_DATA_ADDR = 0x810000
+#EEMEM_DATA_SIZE = 0xfff0
+#TEXT_DATA_SIZE = 0xfff0
 
 #Build configuration
 ifeq ($(OS),Windows_NT)
@@ -117,8 +118,14 @@ SRC         += Application/ISO14443-3A.cpp Application/Crypto1.cpp Application/M
 SRC         += ChameleonCrypto.cpp ChipLocking.cpp
 SRC         += $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = ../LUFA
-CC_FLAGS     = -O0 -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) -DEEMEM_DATA_ADDR=$(EEMEM_DATA_ADDR) -DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" -DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS) -IArduinoCryptoLib/libraries/Crypto -IArduinoCryptoLib/libraries/CryptoLegacy/src
-LD_FLAGS     =  -Wl,--start-group -Wl,--no-as-needed -LArduinoCryptoLib -lArduinoCrypto -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) -Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR) #-Wl,--section-start=.eeprom=$(EEMEM_DATA_ADDR)
+CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) -DEEMEM_DATA_ADDR=$(EEMEM_DATA_ADDR) \
+		-DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" -DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS) 
+		#-IArduinoCryptoLib/libraries/Crypto -IArduinoCryptoLib/libraries/CryptoLegacy/src
+		#-D__EEPROM_REGION_LENGTH__=$(EEMEM_DATA_SIZE) -D__TEXT_REGION_LENGTH__=$(TEXT_DATA_SIZE) 
+LD_FLAGS     =  -Wl,--start-group -Wl,--no-as-needed \
+		-Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) \
+		-Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR) \
+		-Wl,--section-start=.eeprom=$(EEMEM_DATA_ADDR)
 OBJDIR       = Bin
 OBJECT_FILES = 
 
@@ -136,8 +143,7 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 
 # Default target
-all: crypto_utils ArduinoCryptoLib/libCrypto.a \
-	$(TARGET).hex $(TARGET).bin $(TARGET).elf echo_flash_password
+all: crypto_utils $(TARGET).hex $(TARGET).bin $(TARGET).elf echo_flash_password
 
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
@@ -188,24 +194,24 @@ dfu-prog: $(TARGET).hex $(TARGET).eep
 	dfu-programmer $(MCU) flash $(TARGET).hex
 	dfu-programmer $(MCU) reset
 
-ArduinoCryptoLib/libCrypto.a: ArduinoCryptoLib/libArduinoCrypto.a
-	cd ArduinoCryptoLib/host/Crypto && make clean
-	cd ArduinoCryptoLib/host/Crypto && make \
+#ArduinoCryptoLib/libCrypto.a: ArduinoCryptoLib/libArduinoCrypto.a
+#	cd ArduinoCryptoLib/host/Crypto && make clean
+#	cd ArduinoCryptoLib/host/Crypto && make \
 		CXX=avr-g++ HOSTARCH_FLAGS="-mmcu=avrxmega7 -DNEED_LIBSTDCPP" chameleon 
 
 crypto_utils: 
 
 ChameleonCryptoUtils/UtilityBin/EncodeDump:
-	cd ArduinoCryptoLib/host/Crypto && make clean
-	cd ArduinoCryptoLib/host/Crypto && make \
+	#cd ArduinoCryptoLib/host/Crypto && make clean
+	#cd ArduinoCryptoLib/host/Crypto && make \
 		CXX="g++ -Wl,--start-group -Wl,--no-as-needed -lstdc++ -frtti --std=c++11" \
 		linux_box_testing
-	cd ChameleonCryptoUtils && g++ CreateEncryptedDumpImage.cpp -c \
+	#cd ChameleonCryptoUtils && g++ CreateEncryptedDumpImage.cpp -c \
 		-Wl,--start-group -Wl,--no-as-needed -std=c++11 -lstdc++ \
 		-frtti -I/usr/include -I`readlink -f ../ArduinoCryptoLib/libraries/Crypto` \
 		-I`readlink -f ../ArduinoCryptoLib/libraries/CryptoLegacy/src` \
 		-L`readlink -f ../ArduinoCryptoLib` -lArduinoCryptoLinuxHostVersion
-	cd ChameleonCryptoUtils && g++ -o UtilityBin/EncodeDump CreateEncryptedDumpImage.o \
+	#cd ChameleonCryptoUtils && g++ -o UtilityBin/EncodeDump CreateEncryptedDumpImage.o \
 		-Wl,--start-group -Wl,--no-as-needed -std=c++11 -lstdc++ -frtti \
 		-L`readlink -f ../ArduinoCryptoLib` -lArduinoCryptoLinuxHostVersion
 

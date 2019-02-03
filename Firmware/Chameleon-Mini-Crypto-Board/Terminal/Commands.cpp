@@ -4,8 +4,6 @@
 #include <avr/pgmspace.h>
 #include <Settings.h>
 
-#include <SHA3.h>
-
 #include "Commands.h"
 #include "XModem.h"
 #include "../Settings.h"

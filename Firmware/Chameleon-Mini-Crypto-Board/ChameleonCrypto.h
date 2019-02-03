@@ -13,11 +13,13 @@
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
 
+#if 0
 #include <CTR.h>
 #include <CFB.h>
 #include <OFB.h>
 #include <CBC.h>
 #include <AES.h>
+#endif
 
 #include "Memory.h"
 #include "Log.h"
@@ -28,6 +30,7 @@
 #endif
 #define MAX_KEY_LENGTH            (BLOCK_CIPHER_KEY_BYTE_SIZE)
 
+#if 0
 #if defined(BLOCK_CIPHER_TYPE_AES128)
      typedef AESSmall128 BlockCipher_t;
      #define BLOCK_CIPHER_KEY_BYTE_SIZE (128 / BITS_PER_BYTE)
@@ -48,6 +51,10 @@
 #else
      typedef CTR< BlockCipher_t > Cipher_t;
 #endif
+#endif
+
+typedef uint32_t * Cipher_t;
+#define BLOCK_CIPHER_KEY_BYTE_SIZE      (256 / BITS_PER_BYTE)
 
 typedef size_t KeyAuth_t; // Stores: > 0 indicating number of remaining key data edits if authenticated 
 typedef struct {

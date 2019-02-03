@@ -153,7 +153,7 @@ check: all $(SKETCH_OUTPUTS)
 
 .depend/%.d: %.cpp
 	@set -e; rm -f $@; mkdir -p `dirname $@`; \
-	$(CXX) $(CPPFLAGS) $< > $@.$$$$; \
+	$(CXX) -MM $(CPPFLAGS) $< > $@.$$$$; \
 	sed 's,\(.*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 

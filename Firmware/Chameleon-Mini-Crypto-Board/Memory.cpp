@@ -20,7 +20,7 @@
 
 /* Convert defines from Makefile */
 #define FLASH_DATA_START		FLASH_DATA_ADDR
-#define FLASH_DATA_END			(FLASH_DATA_ADDR + FLASH_DATA_SIZE - 2)
+#define FLASH_DATA_END			(FLASH_DATA_ADDR + FLASH_DATA_SIZE - 1)
 
 /* Definitions for FRAM */
 #define FRAM_USART	USARTD0

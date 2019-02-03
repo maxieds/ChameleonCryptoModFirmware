@@ -93,19 +93,19 @@ ERROR_IF_NONBOOL ?= $(if $(filter Y N, $($(strip $(1)))), , $(error Makefile $(s
 # Default values of optionally user-supplied variables
 COMPILER_PATH      ?=
 BOARD              ?= NONE
-OPTIMIZATION       ?= s
+OPTIMIZATION       ?= 0
 F_CPU              ?=
 C_STANDARD         ?= gnu99 #gnu99
-CPP_STANDARD       ?= c++98
-C_FLAGS            ?=
+CPP_STANDARD       ?= c++11
+C_FLAGS            ?= -g -gdwarf-2 -gstrict-dwarf
 CPP_FLAGS          ?= -Wall -Wextra -Wno-narrowing
 ASM_FLAGS          ?=
-CC_FLAGS           ?=
+CC_FLAGS           ?= -g -gdwarf-2 -gstrict-dwarf
 OBJDIR             ?= .
 OBJECT_FILES       ?=
 DEBUG_FORMAT       ?= dwarf-2
 DEBUG_LEVEL        ?= 2
-LINKER_RELAXATIONS ?= Y
+LINKER_RELAXATIONS ?= N
 
 # Sanity check user supplied values
 $(foreach MANDATORY_VAR, $(LUFA_BUILD_MANDATORY_VARS), $(call ERROR_IF_UNSET, $(MANDATORY_VAR)))
@@ -203,7 +203,7 @@ endif
 # assembly code for devices with large amounts of flash; the jump table target
 # is extracted from FLASH without using the correct ELPM instruction, resulting
 # in a pseudo-random jump target.
-BASE_CC_FLAGS += -fno-jump-tables
+BASE_CC_FLAGS += -fno-jump-tables -fdata-sections
 
 # Additional language specific compiler flags
 BASE_C_FLAGS   := -x c -O$(OPTIMIZATION) -std=$(C_STANDARD) -Wstrict-prototypes
@@ -211,7 +211,7 @@ BASE_CPP_FLAGS := -x c++ -O$(OPTIMIZATION) -std=$(CPP_STANDARD)
 BASE_ASM_FLAGS := -x assembler-with-cpp
 
 # Create a list of flags to pass to the linker
-BASE_LD_FLAGS := -Wl,--start-group -Wl,--no-as-needed -lm -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections
+BASE_LD_FLAGS := -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections -nodefaultlibs -nostdlib -L/usr/lib/avr/lib/avrxmega7 /usr/lib/avr/lib/avrxmega7/*.a -L/usr/lib/avr/lib -lc -lm
 ifeq ($(LINKER_RELAXATIONS), Y)
    BASE_LD_FLAGS += -Wl,--relax
 endif
@@ -291,7 +291,7 @@ $(SRC):
 # Compiles an input C++ source file and generates an assembly listing for it
 %.s: %.cpp $(MAKEFILE_LIST)
 	@echo $(MSG_COMPILE_CMD) Generating assembly from C++ file \"$(notdir $<)\"
-	$(CROSS)-gcc -S $(BASE_CC_FLAGS) $(BASE_CPP_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) $< -o $@
+	$(CROSS)-g++ -S $(BASE_CC_FLAGS) $(BASE_CPP_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) $< -o $@
 
 # Compiles an input C source file and generates a linkable object file for it
 $(OBJDIR)/%.o: %.c $(MAKEFILE_LIST)
@@ -301,12 +301,12 @@ $(OBJDIR)/%.o: %.c $(MAKEFILE_LIST)
 # Compiles an input C++ source file and generates a linkable object file for it
 $(OBJDIR)/%.o: %.cpp $(MAKEFILE_LIST)
 	@echo $(MSG_COMPILE_CMD) Compiling C++ file \"$(notdir $<)\"
-	$(CROSS)-gcc -c $(BASE_CC_FLAGS) $(BASE_CPP_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) -MMD -MP -MF $(@:%.o=%.d) $< -o $@
+	$(CROSS)-g++ -c $(BASE_CC_FLAGS) $(BASE_CPP_FLAGS) $(CC_FLAGS) $(CPP_FLAGS) -MMD -MP -MF $(@:%.o=%.d) $< -o $@
 
 # Assembles an input ASM source file and generates a linkable object file for it
 $(OBJDIR)/%.o: %.S $(MAKEFILE_LIST)
 	@echo $(MSG_ASSEMBLE_CMD) Assembling \"$(notdir $<)\"
-	$(CROSS)-gcc -c $(BASE_CC_FLAGS) $(BASE_ASM_FLAGS) $(CC_FLAGS) $(ASM_FLAGS) -MMD -MP -MF $(@:%.o=%.d) $< -o $@
+	$(CROSS)-g++ -c $(BASE_CC_FLAGS) $(BASE_ASM_FLAGS) $(CC_FLAGS) $(ASM_FLAGS) -MMD -MP -MF $(@:%.o=%.d) $< -o $@
 
 # Generates a library archive file from the user application, which can be linked into other applications
 .PRECIOUS  : $(OBJECT_FILES)

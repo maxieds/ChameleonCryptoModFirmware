@@ -1,12 +1,8 @@
 #include "Chameleon-Mini-Crypto-Board.h"
 
-#include <util/delay.h>
-
 int main(void)
 {
-    _delay_ms(5000);
     SystemInit();
-    _delay_ms(1000);
     SettingsLoad();
     LEDInit();
     MemoryInit();

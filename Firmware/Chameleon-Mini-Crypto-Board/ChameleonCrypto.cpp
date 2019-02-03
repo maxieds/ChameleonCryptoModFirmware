@@ -7,7 +7,7 @@
 
 #include <util/delay.h>
 
-#include <SHA3.h>
+//#include <SHA3.h>
 
 #include "ChameleonCrypto.h"
 #include "Settings.h"
@@ -101,6 +101,8 @@ size_t PassphraseToAESKeyData(const char *passphrase, uint8_t *keyDataBuffer, si
      if(passphrase == NULL || keyDataBuffer == NULL) { 
           return 0;
      }
+     return 0;
+     #if 0
      size_t pphLength = strlen(passphrase);
      SHA3_256 pphHasherObj;
      pphHasherObj.clear();
@@ -119,10 +121,13 @@ size_t PassphraseToAESKeyData(const char *passphrase, uint8_t *keyDataBuffer, si
      size_t copyNumBytes = MIN(maxKeyDataBytes, pphHasherObj.hashSize());
      memcpy(keyDataBuffer, keyDataHash, copyNumBytes);
      return copyNumBytes;
+     #endif
 }
 
 Cipher_t CreateBlockCipherObject(const uint8_t *keyData, size_t keyLength, 
 		                 const uint8_t *initVecData, size_t ivLength) { 
+     return NULL;
+     #if 0
      Cipher_t cipherObj;
      if(keyData == NULL || !keyLength || initVecData == NULL || !ivLength) {
           return cipherObj;
@@ -135,6 +140,7 @@ Cipher_t CreateBlockCipherObject(const uint8_t *keyData, size_t keyLength,
      }
      #endif
      return cipherObj;
+     #endif
 }
 
 Cipher_t CreateBlockCipherObjectFromKeyIndex(size_t keyIndex, const uint8_t *initVecData, size_t ivLength) { 
@@ -152,11 +158,14 @@ uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, size_t by
      if(byteBuf == NULL || byteBufLen <= 0) { 
           return NULL;
      }
+     return NULL;
+     #if 0
      uint8_t *plaintextBuf = (uint8_t *) malloc(byteBufLen * sizeof(uint8_t));
      uint8_t byteBufLocalCopy[MAX_KEY_LENGTH];
      ReadEEPBlock((uint16_t) &byteBuf, byteBufLocalCopy, byteBufLen);
      cipherObj.decrypt(plaintextBuf, byteBufLocalCopy, byteBufLen);
      return plaintextBuf;
+     #endif
 }
 
 void IndicateCryptoUploadSuccess() { 
