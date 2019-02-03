@@ -64,7 +64,7 @@ void SystemInit(void)
     RTC.INTCTRL = RTC_OVFINTLVL_LO_gc;
 
     /* Enable EEPROM data memory mapping */
-    NVM.CTRLB |= NVM_EEMAPEN_bm;
+    //NVM.CTRLB |= NVM_EEMAPEN_bm;
 
     /* Enable DMA */
     DMA.CTRL = DMA_ENABLE_bm | DMA_DBUFMODE_DISABLED_gc | DMA_PRIMODE_RR0123_gc;

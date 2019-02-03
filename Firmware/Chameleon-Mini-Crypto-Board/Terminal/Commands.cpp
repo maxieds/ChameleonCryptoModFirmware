@@ -150,7 +150,7 @@ CommandStatusIdType CommandExecParamUploadEncrypted(char *outMessage, const char
      }
      
      size_t keyIndexNum = atoi(keyIndex);
-     if(keyIndexNum < 0 || keyIndexNum >= NUM_KEYS_STORAGE) {
+     if(keyIndexNum >= NUM_KEYS_STORAGE) {
           snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
                      PSTR("Key index #%d out of range. Try keys indexed 0-%d."), 
 	              keyIndexNum, NUM_KEYS_STORAGE - 1);

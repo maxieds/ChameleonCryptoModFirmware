@@ -88,8 +88,8 @@ SETTINGS        += -DALWAYS_DIFFTIME_COMMANDS=1
 SETTINGS        += -DPRIu16=\"PRIu16\"
 
 #Memory definitions and objcopy flags to include sections in binaries
-FLASH_DATA_ADDR = 0x1000 #Start of data section in flash
-FLASH_DATA_SIZE = 0x1000 #Size of data section in flash
+FLASH_DATA_ADDR = 0x10000 #Start of data section in flash
+FLASH_DATA_SIZE = 0x10000 #Size of data section in flash
 FLASH_DATA_OBJCOPY = --set-section-flags=.flashdata="alloc,load"
 SPM_HELPER_ADDR = 0x21FE0 #Start of SPM helper section. Should be last 32Byte in bootloader section
 SPM_HELPER_OBJCOPY = --set-section-flags=.spmhelper="alloc,load"
@@ -118,9 +118,10 @@ SRC         += Application/ISO14443-3A.cpp Application/Crypto1.cpp Application/M
 SRC         += ChameleonCrypto.cpp ChipLocking.cpp
 SRC         += $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = ../LUFA
-CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) -DEEMEM_DATA_ADDR=$(EEMEM_DATA_ADDR) \
+CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) \
 		-DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" -DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS) 
 		#-IArduinoCryptoLib/libraries/Crypto -IArduinoCryptoLib/libraries/CryptoLegacy/src
+		#-DEEMEM_DATA_ADDR=$(EEMEM_DATA_ADDR)
 		#-D__EEPROM_REGION_LENGTH__=$(EEMEM_DATA_SIZE) -D__TEXT_REGION_LENGTH__=$(TEXT_DATA_SIZE) 
 LD_FLAGS     =  -Wl,--start-group -Wl,--no-as-needed \
 		-Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) \
@@ -150,11 +151,6 @@ include $(LUFA_PATH)/Build/lufa_core.mk
 include $(LUFA_PATH)/Build/lufa_sources.mk
 include $(LUFA_PATH)/Build/lufa_build.mk
 include $(LUFA_PATH)/Build/lufa_cppcheck.mk
-# include $(LUFA_PATH)/Build/lufa_doxygen.mk
-# include $(LUFA_PATH)/Build/lufa_dfu.mk
-# include $(LUFA_PATH)/Build/lufa_hid.mk
-# include $(LUFA_PATH)/Build/lufa_avrdude.mk
-# include $(LUFA_PATH)/Build/lufa_atprogram.mk
 
 #Overwrite the LUFA versions of hex/bin file generation to include spmhelper and flashdata sections
 %.hex: %.elf
@@ -217,3 +213,14 @@ ChameleonCryptoUtils/UtilityBin/EncodeDump:
 
 echo_flash_password:
 	@echo "USER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE)
+
+## Create a make target to copy the nicely packaged, newly built firmware to the stock
+## Latest/* directory once we're happy that the testing code works well enough :) 
+FWVERSION =$(shell grep --color=never CHAMELEON_MINI_FIRMWARE_VERSION Chameleon-Mini-Crypto-Board.h | cut -d "\"" -f2)
+PackageBinaryRelease: Chameleon-Mini-Crypto-Board.hex Chameleon-Mini-Crypto-Board.eep 
+	@cp Chameleon-Mini-Crypto-Board.hex Latest/Chameleon-Mini-Crypto-Board-$(FWVERSION).hex
+	@cp Chameleon-Mini-Crypto-Board.eep Latest/Chameleon-Mini-Crypto-Board-$(FWVERSION).eep
+	@git add -f Latest/Chameleon-Mini-Crypto-Board-$(FWVERSION).*
+
+TestSimulAVR: Chameleon-Mini-Crypto-Board.elf
+	@simulavr -d atmega128 Chameleon-Mini-Crypto-Board.elf
