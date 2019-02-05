@@ -272,7 +272,7 @@ void XModemTick(void)
 	    bool operationStatus = false;
             // create the block cipher, decrypt to plaintext, and then upload into memory: 
 	    Cipher_t decryptCipher = PrepareBlockCipherObjectFromKeyIndex(
-		LocalKeyIndex, LocalIVSaltData, LocalIVSaltDataByteCount
+		LocalKeyIndex, LocalIVSaltData, MIN(AES_IV_SIZE, LocalIVSaltDataByteCount)
 	    );
 	    uint8_t *ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
 		      	                         CryptoUploadBufferByteCount);
@@ -294,7 +294,7 @@ void XModemTick(void)
 		     size_t nextTimeByteCount = HexStringToBuffer(nextTimeBytes, TERMINAL_BUFFER_SIZE, 
 				                                  nextTimeStr);
 		     decryptCipher = PrepareBlockCipherObjectFromKeyIndex(
-		              LocalKeyIndex, nextTimeBytes, nextTimeByteCount
+		              LocalKeyIndex, nextTimeBytes, MIN(AES_IV_SIZE, nextTimeByteCount)
 		     );
 		     ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
 				                 CryptoUploadBufferByteCount);

@@ -95,7 +95,7 @@ bool WriteBufferToFile(const char *outputPath, uint8_t *fileBuffer, size_t bufBy
 
 size_t HexStringToBuffer(void *Buffer, size_t MaxBytes, const char *HexIn);
 Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength, 
-                                  const uint8_t *initVecData, size_t ivLength);
+                                  const uint8_t *initVecData, size_t ivLength, bool setSalt = true);
 
 void PrintUsage(const char *progName) { 
      fprintf(stderr, "Usage: %s [--encrypt] --input-dump-image=<FilePath> ", progName);
@@ -161,7 +161,6 @@ UtilityExecData_t ParseCommandLineData(int argc, char** &argv) {
 	       size_t expectedBufSize = (strlen(optarg) + 1) / 2;
 	       size_t keyBufByteCount = HexStringToBuffer(runtimeDataOptions.keyDataBytes, 
 			                                  expectedBufSize, optarg);
-	       fprintf(stderr, "EXPECTED / ACTUAL KEY SIZES: %d, %d\n", expectedBufSize, keyBufByteCount);
 	       runtimeDataOptions.keyDataByteCount = keyBufByteCount;
 	       if(keyBufByteCount != expectedBufSize) { 
 	            runtimeDataOptions.optionParsingError = true;
@@ -189,6 +188,12 @@ int main(int argc, char **argv) {
      }
      
      //fprintf(stderr, "sizeof(AESCipher_t) = %d\n", sizeof(AESCipher_t));
+     //int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
+     //uint8_t *dataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
+     //LoadFileIntoBuffer(runtimeOptions.inputDumpFilePath, dataBuf, dataBufByteCount);
+     //WriteBufferToFile(runtimeOptions.outputDumpFilePath, dataBuf, dataBufByteCount);
+     //return 0;
+
      if(runtimeOptions.dumpFileOperation == OPERATION_ENCRYPT) { 
           int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
 	  if(!dataBufByteCount) { 
@@ -210,6 +215,7 @@ int main(int argc, char **argv) {
 		 	                                runtimeOptions.keyDataByteCount, 
 							saltBuf, 16);
 	  uint8_t *encDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
+ 	  memset(encDataBuf, 0xBA, sizeof(encDataBuf));
 	  if(cipherObj == NULL || encDataBuf == NULL || unencDataBuf == NULL) {
                fprintf(stderr, "ERROR: NULL pointer(s), %p : %p : %p [%02x]\n", cipherObj, encDataBuf, 
 		       unencDataBuf, dataBufByteCount);
@@ -230,7 +236,8 @@ int main(int argc, char **argv) {
 	  fprintf(stdout, "DONE!\n");
 	  free(unencDataBuf); unencDataBuf = NULL;
 	  free(encDataBuf); encDataBuf = NULL;
-          DeleteCipherObject(cipherObj);
+          ClearCipherObject(cipherObj);
+	  DeleteCipherObject(cipherObj);
      }
      else { // decrypt:
           int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
@@ -253,16 +260,16 @@ int main(int argc, char **argv) {
 		 	                                runtimeOptions.keyDataByteCount, 
 							saltBuf, 16);
 	  uint8_t *unencDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
- 	  if(!DecryptDataBuffer(cipherObj, unencDataBuf, encDataBuf, dataBufByteCount) || 
+	  memcpy(unencDataBuf, encDataBuf, dataBufByteCount);
+	  if(!DecryptDataBuffer(cipherObj, unencDataBuf, encDataBuf, dataBufByteCount) || 
 	     memcmp(unencDataBuf, CRYPTO_UPLOAD_HEADER, CRYPTO_UPLOAD_HEADER_SIZE)) {
-               fprintf(stderr, "ERROR: Consistency in decrypted text, header data NOT correct ...\n%S\n", 
-		       unencDataBuf);
+               fprintf(stderr, "ERROR: Consistency in decrypted text, header data NOT correct ...\n%c\n", 
+		       unencDataBuf + 18);
 	       free(unencDataBuf);
 	       free(encDataBuf);
 	       return 6;
 	  }
-	  fprintf(stdout, "Writing plaintext buffer to file @ \"%s\" ...\n", runtimeOptions.outputDumpFilePath);
-          if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, encDataBuf, dataBufByteCount)) { 
+          if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, unencDataBuf, dataBufByteCount)) { 
                fprintf(stderr, "ERROR: Writing plaintext dump buffer back to file ...\n");
 	       free(unencDataBuf);
 	       free(encDataBuf);
@@ -271,7 +278,8 @@ int main(int argc, char **argv) {
 	  fprintf(stdout, "DONE!\n");
 	  //free(unencDataBuf); unencDataBuf = NULL;
 	  //free(encDataBuf); encDataBuf = NULL;
-          DeleteCipherObject(cipherObj);
+          ClearCipherObject(cipherObj);
+	  DeleteCipherObject(cipherObj);
      }
 
      return 0;
@@ -309,7 +317,7 @@ int LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, int maxByt
 	            bytesRead++;
 	       }
 	  }
-	  fprintf(stderr, "Total bytes read = % 9d\n", bytesRead);
+	  //fprintf(stderr, "Total bytes read = % 9d\n", bytesRead);
      }
      close(fpInputBuffer);
      return bytesRead;
@@ -374,17 +382,17 @@ size_t HexStringToBuffer(void* Buffer, size_t MaxBytes, const char* HexIn) {
 }
 
 Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,  
-		                  const uint8_t *initVecData, size_t ivLength) { 
+		                  const uint8_t *initVecData, size_t ivLength, 
+				  bool setSalt) { 
      Cipher_t cipherObj = CreateNewCipherObject();
      if(cipherObj == NULL || keyData == NULL || !keyLength || initVecData == NULL || !ivLength) {
 	  DeleteCipherObject(cipherObj);
           return NULL;
      }
-     int rv1, rv2;
-     if((rv2 = SetCipherKey(cipherObj, keyData, keyLength)) && (rv1 = SetCipherSalt(cipherObj, initVecData, ivLength))) { 
+     if(SetCipherKey(cipherObj, keyData, keyLength) && setSalt && 
+        SetCipherSalt(cipherObj, initVecData, ivLength)) { 
           return cipherObj;
      }
-     fprintf(stderr, "Invalid set ops: %d, %d\n", rv1, rv2);
      DeleteCipherObject(cipherObj);
      return NULL;
 }

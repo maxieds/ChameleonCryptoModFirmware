@@ -17,7 +17,7 @@ extern "C" {
 
 #include "AESCipherType.h"
 
-#define AES_CIPHERT_SIZE       (64)
+#define AES_CIPHERT_SIZE       (240)
 
 inline AESCipher_t * CreateNewCipherObject() {
      AESCipher_t *cipherObjPtr = (AESCipher_t *) malloc(sizeof(AES_CIPHERT_SIZE));
@@ -31,6 +31,7 @@ inline void DeleteCipherObject(AESCipher_t *cipher) {
      }
 }
 
+void ClearCipherObject(AESCipher_t *cipher);
 bool SetCipherKey(AESCipher_t *cipher, const uint8_t *keyData, size_t keyLength);
 bool SetCipherSalt(AESCipher_t *cipher, const uint8_t *saltData, size_t saltByteCount);
 bool EncryptDataBuffer(AESCipher_t *cipher, uint8_t *encryptedDataBuf, 

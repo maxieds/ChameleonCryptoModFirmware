@@ -9,7 +9,7 @@
 #include <AESCrypto/AES.h>
 #include <AESCrypto/CFB.h>
 
-typedef CFB< AESTiny128 > AESCFBCipher_t;
+typedef CFB< AES192 > AESCFBCipher_t;
 
 /* C++ versions of these functions: */
 inline AESCipher_t * CreateNewCipherObject() {
@@ -22,6 +22,7 @@ inline void DeleteCipherObject(AESCipher_t *cipher) {
      }
 }
 
+void ClearCipherObject(AESCipher_t *cipher);
 bool SetCipherKey(AESCipher_t *cipher, const uint8_t *keyData, size_t keyLength);
 bool SetCipherSalt(AESCipher_t *cipher, const uint8_t *saltData, size_t saltByteCount);
 size_t GetCipherBlockSize(AESCipher_t *cipher);
