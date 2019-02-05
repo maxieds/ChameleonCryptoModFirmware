@@ -3,21 +3,10 @@
  * Created: 2019.02.03
  */
 
-#include "AESCrypto/AES.h"
-#include "AESCrypto.h"
+#include <stdlib.h>
+#include <stdio.h>
 
-extern "C" {
-
-AESCipher_t * CreateNewCipherObject() {
-     return new AESCipher_t();
-}
-
-void DeleteCipherObject(AESCipher_t *cipher) { 
-     if(cipher != NULL) {
-          delete cipher;
-          cipher = NULL;
-     }
-}
+#include "AESCryptoCPP.cpp"
 
 bool SetCipherKey(AESCipher_t *cipher, const uint8_t *keyData, size_t keyLength) {
      if(cipher == NULL || keyData == NULL) {
@@ -27,30 +16,25 @@ bool SetCipherKey(AESCipher_t *cipher, const uint8_t *keyData, size_t keyLength)
      return true;
 }
 
-size_t GetCipherBlockSize(AESCipher_t *cipher) {
-     if(cipher == NULL) { 
-          return 0;
+bool SetCipherSalt(AESCipher_t *cipher, const uint8_t *saltData, size_t saltByteCount) {
+     if(cipher == NULL || saltData == NULL) {
+          return false;
      }
-     return cipher->blockSize();
+     else if(!cipher->ivSize()) {
+          return true;
+     }
+     return cipher->setIV(saltData, saltByteCount);
 }
 
 bool EncryptDataBuffer(AESCipher_t *cipher, uint8_t *encDataBuf, 
 		       const uint8_t *ptextDataBuf, size_t dataByteCount) { 
      if(cipher == NULL || encDataBuf == NULL || ptextDataBuf == NULL) { 
-          cipher->clear();
+          if(cipher != NULL) {
+               cipher->clear();
+	  }
 	  return false;
      }
-     size_t blockSize = GetCipherBlockSize(cipher);
-     if(dataByteCount % blockSize) { 
-	  cipher->clear();
-          return false;
-     }
-     size_t totalBlocks = dataByteCount / blockSize;
-     for(size_t b = 0; b < totalBlocks; b++) { 
-          size_t dataBufOffset = b * blockSize;
-	  cipher->encryptBlock(encDataBuf + dataBufOffset, ptextDataBuf + dataBufOffset);
-	       return false;
-     }
+     cipher->encrypt(encDataBuf, ptextDataBuf, dataByteCount);
      cipher->clear();
      return true;
 }
@@ -61,18 +45,7 @@ bool DecryptDataBuffer(AESCipher_t *cipher, uint8_t *ptextDataBuf, const uint8_t
 	  cipher->clear();
           return false;
      }
-     size_t blockSize = GetCipherBlockSize(cipher);
-     if(dataBufByteCount % blockSize) { 
-          cipher->clear();
-	  return false;
-     }
-     size_t totalBlocks = dataBufByteCount / blockSize;
-     for(size_t b = 0; b < totalBlocks; b++) { 
-          size_t blockOffset = b * blockSize;
-	  cipher->decryptBlock(ptextDataBuf + blockOffset, encDataBuf + blockOffset);
-     }
+     cipher->decrypt(ptextDataBuf, encDataBuf, dataBufByteCount);
      cipher->clear();
      return true;
-}
-
 }

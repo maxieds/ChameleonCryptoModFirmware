@@ -5,7 +5,7 @@ LIBRARY = libAESCryptoLinux.a
 
 CXX=g++
 HOSTARCH_FLAGS= -march=$(shell uname -m | tr "_" "-") -DLINUX_HOST_BUILD
-CPPFLAGS = 
+CPPFLAGS = -I$(shell readlink -f .)
 CXXFLAGS = -g -Wall $(CPPFLAGS) $(HOSTARCH_FLAGS)
 
 SOURCES = \
@@ -16,6 +16,8 @@ SOURCES = \
 	AESCrypto/AVRGCCSupplements.cpp \
 	AESCrypto/BlockCipher.cpp \
 	AESCrypto/Crypto.cpp \
+	AESCrypto/Cipher.cpp \
+	AESCrypto/CFB.cpp \
 	SHAHash/Hash.cpp \
 	SHAHash/SHA256.cpp \
 	AESCrypto.cpp \
@@ -32,5 +34,6 @@ clean:
 	$(RM) -f $(OBJECTS) $(LIBRARY)
 
 %.o: %.cpp
+	@echo "[CXXFLAGS]:" $(CXXFLAGS)
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 

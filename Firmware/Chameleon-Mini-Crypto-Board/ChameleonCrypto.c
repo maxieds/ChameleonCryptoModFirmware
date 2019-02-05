@@ -120,16 +120,15 @@ bool PassphraseToAESKeyData(size_t keyIndex, const char *passphrase) {
 Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,  
 		                  const uint8_t *initVecData, size_t ivLength) { 
      AESCipher_t *cipherObj = CreateNewCipherObject();
-     if(cipherObj == NULL || keyData == NULL || !keyLength || initVecData == NULL || !ivLength) {
-          return cipherObj;
+     if(cipherObj != NULL && (keyData == NULL || !keyLength || initVecData == NULL || !ivLength)) {
+          DeleteCipherObject(cipherObj);
+          return NULL;
      }
-     // use the salt with the keyData to generate a new key for the operation:
-     uint8_t *saltedKey = (uint8_t *) malloc(keyLength * sizeof(uint8_t));
-     memcpy(saltedKey, keyData, keyLength);
-     for(int ctr = 0; ctr < MIN(keyLength, ivLength); ctr++) {
-          saltedKey[ctr] = keyData[ctr] ^ initVecData[ctr];
+     else {
+          return NULL;
      }
-     if(SetCipherKey(cipherObj, saltedKey, keyLength)) { 
+     if(SetCipherKey(cipherObj, keyData, keyLength) && 
+        SetCipherSalt(cipherObj, initVecData, ivLength)) { 
           return cipherObj;
      }
      DeleteCipherObject(cipherObj);

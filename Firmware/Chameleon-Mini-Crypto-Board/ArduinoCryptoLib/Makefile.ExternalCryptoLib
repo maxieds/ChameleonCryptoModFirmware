@@ -7,7 +7,7 @@ LD=avr-g++
 CXX=avr-g++
 HOSTARCH_FLAGS=-mmcu=avrxmega7 -D__AVR_ATxmega128A4U__ -DHOST_BUILD -DNEED_LIBSTDCPP\
 	       -D__cplusplus
-CPPFLAGS = -Wl,--export-dynamic -fPIC -O0 -Wl,--as-needed
+CPPFLAGS = -Wl,--export-dynamic -fPIC -O0 -Wl,--as-needed -I$(shell readlink -f .)
 CXXFLAGS = -g -Wall $(CPPFLAGS) $(HOSTARCH_FLAGS)
 
 SOURCES = \
@@ -20,6 +20,8 @@ SOURCES = \
 	AESCrypto/AVRGCCSupplements.cpp \
 	AESCrypto/BlockCipher.cpp \
 	AESCrypto/Crypto.cpp \
+	AESCrypto/Cipher.cpp \
+	AESCrypto/CFB.cpp \
 	SHAHash/Hash.cpp \
 	SHAHash/SHA256.cpp
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
@@ -28,12 +30,12 @@ default: $(LIBRARY)
 
 $(LIBRARY): $(OBJECTS)
 	$(RM) $(LIBRARY)
-	#avr-nm $(LIBRARY)
 	$(AR) rcv $(LIBRARY) $(OBJECTS)
 
 clean:
 	$(RM) -f $(OBJECTS) $(LIBRARY)
 
 %.o: %.cpp
+	@echo "[CXXFLAGS]:" $(CXXFLAGS)
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 

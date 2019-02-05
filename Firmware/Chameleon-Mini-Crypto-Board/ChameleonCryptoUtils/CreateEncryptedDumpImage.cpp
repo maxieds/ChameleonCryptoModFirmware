@@ -15,14 +15,16 @@
 #include <errno.h>
 #include <time.h>
 
-#include <AESCrypto.h>
-#include <AESCrypto/AES.h>
+#include <AESCryptoCPP.cpp>
 
 typedef AESCipher_t * Cipher_t;
 
 #define MAX_BUFFER_SIZE              (2048)
 #define MAX_KEYDATA_BUFFER_SIZE      (2048)
 static const size_t BITS_PER_BYTE = 8;
+
+#define CRYPTO_UPLOAD_HEADER         ("MFCLASSIC1K-DMP")
+#define CRYPTO_UPLOAD_HEADER_SIZE    (15)
 
 typedef enum {
      OPERATION_ENCRYPT = 4, 
@@ -105,11 +107,11 @@ void PrintUsage(const char *progName) {
 UtilityExecData_t ParseCommandLineData(int argc, char** &argv) { 
      static struct option long_options_spec[] = {
           {"encrypt",            no_argument,       NULL, 0}, 
+	  {"decrypt",            no_argument,       NULL, 0},
 	  {"input-dump-image",   required_argument, NULL, 0}, 
 	  {"output-dump-image",  required_argument, NULL, 0}, 
 	  {"CTR-mode-size",      required_argument, NULL, 0}, 
 	  {"key-data",           required_argument, NULL, 0}, 
-	  {"key-data-file",      required_argument, NULL, 0}, 
 	  {NULL,                 0,                 NULL, 0}
      };
      int option_index = 0, optch;
@@ -127,19 +129,24 @@ UtilityExecData_t ParseCommandLineData(int argc, char** &argv) {
           if(!strcmp(long_options_spec[option_index].name, "encrypt")) { 
 	       runtimeDataOptions.dumpFileOperation = OPERATION_ENCRYPT;
 	  }
+	  else if(!strcmp(long_options_spec[option_index].name, "decrypt")) {
+	       runtimeDataOptions.dumpFileOperation = OPERATION_DECRYPT;
+	  }
 	  else if(!strcmp(long_options_spec[option_index].name, "input-dump-image")) { 
                strncpy(runtimeDataOptions.inputDumpFilePath, optarg, MAX_BUFFER_SIZE);
 	       if(!alreadySetOutputPath) { 
                     char *inputFileExt = strrchr(optarg, '.');
+		    const char *outFileExt = runtimeDataOptions.dumpFileOperation == OPERATION_ENCRYPT ? 
+			                     ".edmp" : ".pdmp";
 		    if(inputFileExt == NULL) { 
 		         strncpy(runtimeDataOptions.outputDumpFilePath, 
 				 runtimeDataOptions.inputDumpFilePath, MAX_BUFFER_SIZE);
-			 strncat(runtimeDataOptions.outputDumpFilePath, ".edmp", MAX_BUFFER_SIZE);
+			 strncat(runtimeDataOptions.outputDumpFilePath, outFileExt, MAX_BUFFER_SIZE);
 			 continue;
 		    }
 		    size_t mainFilePathLen = inputFileExt - optarg;
 		    strncpy(runtimeDataOptions.outputDumpFilePath, optarg, mainFilePathLen);
-		    strncat(runtimeDataOptions.outputDumpFilePath, ".edmp", MAX_BUFFER_SIZE);
+		    strncat(runtimeDataOptions.outputDumpFilePath, outFileExt, MAX_BUFFER_SIZE);
 	       }
 	  }
 	  else if(!strcmp(long_options_spec[option_index].name, "output-dump-image")) { 
@@ -153,23 +160,13 @@ UtilityExecData_t ParseCommandLineData(int argc, char** &argv) {
                strncpy(runtimeDataOptions.keyDataStr, optarg, MAX_KEYDATA_BUFFER_SIZE);
 	       size_t expectedBufSize = (strlen(optarg) + 1) / 2;
 	       size_t keyBufByteCount = HexStringToBuffer(runtimeDataOptions.keyDataBytes, 
-			                                  MAX_KEYDATA_BUFFER_SIZE, optarg);
+			                                  expectedBufSize, optarg);
+	       fprintf(stderr, "EXPECTED / ACTUAL KEY SIZES: %d, %d\n", expectedBufSize, keyBufByteCount);
 	       runtimeDataOptions.keyDataByteCount = keyBufByteCount;
 	       if(keyBufByteCount != expectedBufSize) { 
 	            runtimeDataOptions.optionParsingError = true;
 		    break;
 	       }
-	  }
-	  else if(!strcmp(long_options_spec[option_index].name, "key-data-file")) { 
-               size_t keyDataBytes = GetFileBytes(runtimeDataOptions.inputDumpFilePath);
-	       uint8_t *keyDataBuf = (uint8_t *) malloc(keyDataBytes * sizeof(uint8_t));
-               if(!keyDataBytes || keyDataBytes != 
-		  LoadFileIntoBuffer(runtimeDataOptions.inputDumpFilePath, keyDataBuf, keyDataBytes)) { 
-	            runtimeDataOptions.optionParsingError = true;
-                    break;
-	       }
-	       memcpy(runtimeDataOptions.keyDataBytes, keyDataBuf, MIN(keyDataBytes, MAX_KEYDATA_BUFFER_SIZE));
-	       runtimeDataOptions.keyDataByteCount = MIN(keyDataBytes, MAX_KEYDATA_BUFFER_SIZE);
 	  }
 	  else { 
 	       break;
@@ -191,6 +188,7 @@ int main(int argc, char **argv) {
 	  return -2;
      }
      
+     //fprintf(stderr, "sizeof(AESCipher_t) = %d\n", sizeof(AESCipher_t));
      if(runtimeOptions.dumpFileOperation == OPERATION_ENCRYPT) { 
           int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
 	  if(!dataBufByteCount) { 
@@ -206,26 +204,24 @@ int main(int argc, char **argv) {
 	       free(unencDataBuf);
 	       return 3;
 	  }
-	  uint8_t saltBuf[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00 };
+	  uint8_t saltBuf[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xab,
+	                        0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
 	  Cipher_t cipherObj = PrepareBlockCipherObject(runtimeOptions.keyDataBytes, 
 		 	                                runtimeOptions.keyDataByteCount, 
-							saltBuf, 10);
+							saltBuf, 16);
 	  uint8_t *encDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
-	  size_t blockSize = cipherObj->blockSize();
-	  if(dataBufByteCount % blockSize) { 
-	       fprintf(stderr, "ERROR: ByteCount #%d mod BlockSize %d != 0\n", dataBufByteCount, blockSize);
+	  if(cipherObj == NULL || encDataBuf == NULL || unencDataBuf == NULL) {
+               fprintf(stderr, "ERROR: NULL pointer(s), %p : %p : %p [%02x]\n", cipherObj, encDataBuf, 
+		       unencDataBuf, dataBufByteCount);
+	  }
+          if(!EncryptDataBuffer(cipherObj, encDataBuf, unencDataBuf, dataBufByteCount)) {
+	       fprintf(stderr, "ERROR: Encrypting plaintext to buffer ...\n");
 	       free(unencDataBuf);
 	       free(encDataBuf);
 	       return 4;
 	  }
-	  for(int b = 0; b < dataBufByteCount / blockSize; b++) { 
-	       fprintf(stdout, "Encrypting block #%d (X%d bytes) of %d ...\n", b + 1, blockSize, 
-		       dataBufByteCount / blockSize);
-	       int blockOffset = blockSize * b;
-	       cipherObj->encryptBlock(encDataBuf + blockOffset, unencDataBuf + blockOffset);
-	  }
 	  fprintf(stdout, "Writing encrypted buffer to file @ \"%s\" ...\n", runtimeOptions.outputDumpFilePath);
-          if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, encDataBuf, dataBufByteCount)) { 
+	  if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, encDataBuf, dataBufByteCount)) { 
                fprintf(stderr, "ERROR: Writing encrypted dump buffer back to file ...\n");
 	       free(unencDataBuf);
 	       free(encDataBuf);
@@ -234,7 +230,48 @@ int main(int argc, char **argv) {
 	  fprintf(stdout, "DONE!\n");
 	  free(unencDataBuf); unencDataBuf = NULL;
 	  free(encDataBuf); encDataBuf = NULL;
-	  delete cipherObj; cipherObj = NULL;
+          DeleteCipherObject(cipherObj);
+     }
+     else { // decrypt:
+          int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
+	  if(!dataBufByteCount) { 
+               fprintf(stderr, "ERROR: Reading input dump file \"%s\" ...\n", runtimeOptions.inputDumpFilePath);
+	       return 2;
+	  }
+	  uint8_t *encDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
+	  int actualByteCount = 0;
+	  if(dataBufByteCount != (actualByteCount = 
+	     LoadFileIntoBuffer(runtimeOptions.inputDumpFilePath, encDataBuf, dataBufByteCount))) { 
+               fprintf(stderr, "ERROR: Reading / parsing input dump file \"%s\" (%d != %d) ...\n", 
+		       runtimeOptions.inputDumpFilePath, dataBufByteCount, actualByteCount);
+	       free(encDataBuf);
+	       return 3;
+	  }
+	  uint8_t saltBuf[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xab,
+	                        0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
+	  Cipher_t cipherObj = PrepareBlockCipherObject(runtimeOptions.keyDataBytes, 
+		 	                                runtimeOptions.keyDataByteCount, 
+							saltBuf, 16);
+	  uint8_t *unencDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
+ 	  if(!DecryptDataBuffer(cipherObj, unencDataBuf, encDataBuf, dataBufByteCount) || 
+	     memcmp(unencDataBuf, CRYPTO_UPLOAD_HEADER, CRYPTO_UPLOAD_HEADER_SIZE)) {
+               fprintf(stderr, "ERROR: Consistency in decrypted text, header data NOT correct ...\n%S\n", 
+		       unencDataBuf);
+	       free(unencDataBuf);
+	       free(encDataBuf);
+	       return 6;
+	  }
+	  fprintf(stdout, "Writing plaintext buffer to file @ \"%s\" ...\n", runtimeOptions.outputDumpFilePath);
+          if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, encDataBuf, dataBufByteCount)) { 
+               fprintf(stderr, "ERROR: Writing plaintext dump buffer back to file ...\n");
+	       free(unencDataBuf);
+	       free(encDataBuf);
+	       return 5;
+	  }
+	  fprintf(stdout, "DONE!\n");
+	  //free(unencDataBuf); unencDataBuf = NULL;
+	  //free(encDataBuf); encDataBuf = NULL;
+          DeleteCipherObject(cipherObj);
      }
 
      return 0;
@@ -245,7 +282,7 @@ int GetFileBytes(const char *filePath) {
      struct stat statStructBuf;
      int statSuccessCode = stat(filePath, &statStructBuf);
      if(statSuccessCode == 0) { 
-          return statStructBuf.st_size == 0 ? 0 : statStructBuf.st_size - 1;
+          return statStructBuf.st_size;
      }
      return 0;
 }
@@ -340,17 +377,14 @@ Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,
 		                  const uint8_t *initVecData, size_t ivLength) { 
      Cipher_t cipherObj = CreateNewCipherObject();
      if(cipherObj == NULL || keyData == NULL || !keyLength || initVecData == NULL || !ivLength) {
+	  DeleteCipherObject(cipherObj);
+          return NULL;
+     }
+     int rv1, rv2;
+     if((rv2 = SetCipherKey(cipherObj, keyData, keyLength)) && (rv1 = SetCipherSalt(cipherObj, initVecData, ivLength))) { 
           return cipherObj;
      }
-     // use the salt with the keyData to generate a new key for the operation:
-     uint8_t *saltedKey = (uint8_t *) malloc(keyLength * sizeof(uint8_t));
-     memcpy(saltedKey, keyData, keyLength);
-     for(int ctr = 0; ctr < MIN(keyLength, ivLength); ctr++) {
-          saltedKey[ctr] = keyData[ctr] ^ initVecData[ctr];
-     }
-     if(SetCipherKey(cipherObj, saltedKey, keyLength)) { 
-          return cipherObj;
-     }
+     fprintf(stderr, "Invalid set ops: %d, %d\n", rv1, rv2);
      DeleteCipherObject(cipherObj);
      return NULL;
 }

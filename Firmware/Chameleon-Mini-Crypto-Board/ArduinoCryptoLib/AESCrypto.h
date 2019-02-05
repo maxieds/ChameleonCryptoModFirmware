@@ -13,14 +13,26 @@ extern "C" {
 #include <stddef.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <string.h>
 
-typedef struct AESTiny128 AESTiny128;
-typedef struct AESTiny128 AESCipher_t;
+#include "AESCipherType.h"
 
-AESCipher_t * CreateNewCipherObject();
-void DeleteCipherObject(AESCipher_t *cipher);
+#define AES_CIPHERT_SIZE       (64)
+
+inline AESCipher_t * CreateNewCipherObject() {
+     AESCipher_t *cipherObjPtr = (AESCipher_t *) malloc(sizeof(AES_CIPHERT_SIZE));
+     memset(cipherObjPtr, 0, AES_CIPHERT_SIZE);
+     return cipherObjPtr;
+}
+
+inline void DeleteCipherObject(AESCipher_t *cipher) {
+     if(cipher != NULL) {
+          free(cipher);
+     }
+}
+
 bool SetCipherKey(AESCipher_t *cipher, const uint8_t *keyData, size_t keyLength);
-size_t GetCipherBlockSize(AESCipher_t *cipher);
+bool SetCipherSalt(AESCipher_t *cipher, const uint8_t *saltData, size_t saltByteCount);
 bool EncryptDataBuffer(AESCipher_t *cipher, uint8_t *encryptedDataBuf, 
 		       const uint8_t *ptextDataBuf, size_t dataBufByteCount);
 bool DecryptDataBuffer(AESCipher_t *cipher, uint8_t *ptextDataBuf, 
