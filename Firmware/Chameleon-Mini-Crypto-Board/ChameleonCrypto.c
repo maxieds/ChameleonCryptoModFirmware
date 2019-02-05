@@ -8,8 +8,6 @@
 #include <util/delay.h>
 #include <util/crc16.h>
 
-//#include <SHA3.h>
-
 #include "ChameleonCrypto.h"
 #include "Settings.h"
 #include "Terminal/Commands.h"
@@ -68,7 +66,6 @@ bool SetKeyData(size_t keyIndex, uint8_t *keyData, size_t keyLength) {
      SETTING_UPDATE(GlobalSettings.KeyData.keys);
      GlobalSettings.KeyData.keyLengths[keyIndex] = keyLength;
      SETTING_UPDATE(GlobalSettings.KeyData.keyLengths);
-     //SettingsSave();
      return true;
 }
 
@@ -92,54 +89,55 @@ bool KeyIsValid(size_t keyIndex) {
      return (keyLength > 0) && (keyLength <= MAX_KEY_LENGTH);
 }
 
-size_t PassphraseToAESKeyData(const char *passphrase, uint8_t *keyDataBuffer, size_t maxKeyDataBytes, 
-		              bool useTickTimeSalt) { 
-     if(passphrase == NULL || keyDataBuffer == NULL) { 
-          return 0;
+bool PassphraseToAESKeyData(size_t keyIndex, const char *passphrase) { 
+     if(passphrase == NULL) { 
+          return false;
      }
-     return 0;
-     #if 0
-     size_t pphLength = strlen(passphrase);
-     SHA3_256 pphHasherObj;
-     pphHasherObj.clear();
-     pphHasherObj.resetHMAC(passphrase, pphLength);
-     pphHasherObj.update(passphrase, pphLength);
-     if(useTickTimeSalt) { 
-          uint16_t tickTime = SystemGetSysTick();
-	  char tickTimeStrBuffer[TERMINAL_BUFFER_SIZE];
-	  size_t tickTimeStrLength = IntegerToStringBuffer(tickTime, tickTimeStrBuffer, 
-			                                   TERMINAL_BUFFER_SIZE);
-	  pphHasherObj.update(tickTimeStrBuffer, tickTimeStrLength);
+     else if(keyIndex >= NUM_KEYS_STORAGE) { 
+          return false;
      }
-     size_t KeyDataByteCount = MIN(MIN(TERMINAL_BUFFER_SIZE, BLOCK_CIPHER_KEY_BYTE_SIZE), 256);
-     uint8_t keyDataHash[KeyDataByteCount];
-     pphHasherObj.finalizeHMAC(passphrase, pphLength, keyDataHash, KeyDataByteCount);
-     size_t copyNumBytes = MIN(maxKeyDataBytes, pphHasherObj.hashSize());
-     memcpy(keyDataBuffer, keyDataHash, copyNumBytes);
-     return copyNumBytes;
-     #endif
+     uint8_t pphBytes[MAX_KEY_LENGTH];
+     uint8_t pphByteCount = HexStringToBuffer(pphBytes, MAX_KEY_LENGTH, passphrase);
+     SHAHash_t *hasherObj = GetNewHasherObject();
+     uint8_t *firstRoundHashBytes = ComputeHashBytes(hasherObj, pphBytes, pphByteCount, 
+		                    pphBytes, pphByteCount);
+     size_t frhbCount = GetHashByteCount(hasherObj);
+     uint8_t *keyData = ComputeHashBytes(hasherObj, firstRoundHashBytes, 
+                                        frhbCount, pphBytes, pphByteCount);
+     size_t keyDataSize = GetHashByteCount(hasherObj);
+     ClearHashInitData(hasherObj);
+     DeleteHasherObject(hasherObj);
+     if(firstRoundHashBytes != NULL) {
+          free(firstRoundHashBytes);
+     }
+     bool setStatus = SetKeyData(keyIndex, keyData, keyDataSize);
+     if(keyData != NULL) { 
+          free(keyData);
+     }
+     return setStatus;
 }
 
-Cipher_t CreateBlockCipherObject(const uint8_t *keyData, size_t keyLength, 
-		                 const uint8_t *initVecData, size_t ivLength) { 
-     return NULL;
-     #if 0
-     Cipher_t cipherObj;
-     if(keyData == NULL || !keyLength || initVecData == NULL || !ivLength) {
+Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,  
+		                  const uint8_t *initVecData, size_t ivLength) { 
+     AESCipher_t *cipherObj = CreateNewCipherObject();
+     if(cipherObj == NULL || keyData == NULL || !keyLength || initVecData == NULL || !ivLength) {
           return cipherObj;
      }
-     cipherObj.setKey(keyData, keyLength);
-     cipherObj.setIV(initVecData, ivLength);
-     #ifdef CIPHER_MODE_TYPE_CTR
-     if(DEFAULT_COUNTER_SIZE > 0) { 
-          cipherObj.setCounterSize(DEFAULT_COUNTER_SIZE);
+     // use the salt with the keyData to generate a new key for the operation:
+     uint8_t *saltedKey = (uint8_t *) malloc(keyLength * sizeof(uint8_t));
+     memcpy(saltedKey, keyData, keyLength);
+     for(int ctr = 0; ctr < MIN(keyLength, ivLength); ctr++) {
+          saltedKey[ctr] = keyData[ctr] ^ initVecData[ctr];
      }
-     #endif
-     return cipherObj;
-     #endif
+     if(SetCipherKey(cipherObj, saltedKey, keyLength)) { 
+          return cipherObj;
+     }
+     DeleteCipherObject(cipherObj);
+     return NULL;
 }
 
-Cipher_t CreateBlockCipherObjectFromKeyIndex(size_t keyIndex, const uint8_t *initVecData, size_t ivLength) { 
+Cipher_t PrepareBlockCipherObjectFromKeyIndex(size_t keyIndex, 
+		                              const uint8_t *initVecData, size_t ivLength) { 
      if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE) {
           Cipher_t cipherObj;
 	  return cipherObj;
@@ -147,21 +145,23 @@ Cipher_t CreateBlockCipherObjectFromKeyIndex(size_t keyIndex, const uint8_t *ini
      uint8_t keyData[MAX_KEY_LENGTH];
      size_t keyLength = GlobalSettings.KeyData.keyLengths[keyIndex];
      ReadEEPBlock((uint16_t) &(GlobalSettings.KeyData.keys[keyIndex]), keyData, keyLength);
-     return CreateBlockCipherObject(keyData, keyLength, initVecData, ivLength);
+     return PrepareBlockCipherObject(keyData, keyLength, initVecData, ivLength);
 }
 
-uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, size_t byteBufLen) { 
+uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, 
+		           size_t byteBufLen) { 
      if(byteBuf == NULL || byteBufLen <= 0) { 
           return NULL;
      }
      return NULL;
-     #if 0
      uint8_t *plaintextBuf = (uint8_t *) malloc(byteBufLen * sizeof(uint8_t));
      uint8_t byteBufLocalCopy[MAX_KEY_LENGTH];
      ReadEEPBlock((uint16_t) &byteBuf, byteBufLocalCopy, byteBufLen);
-     cipherObj.decrypt(plaintextBuf, byteBufLocalCopy, byteBufLen);
+     if(!DecryptDataBuffer(cipherObj, plaintextBuf, byteBufLocalCopy, byteBufLen)) { 
+          free(plaintextBuf);
+	  return NULL;
+     }
      return plaintextBuf;
-     #endif
 }
 
 void IndicateCryptoUploadSuccess() { 

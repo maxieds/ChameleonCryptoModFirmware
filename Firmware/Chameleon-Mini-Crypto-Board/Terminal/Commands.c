@@ -787,17 +787,12 @@ CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParam
 	 return COMMAND_ERR_INVALID_PARAM_ID;
      }
      uint8_t keyData[TERMINAL_BUFFER_SIZE];
-     uint16_t keyDataByteCount = PassphraseToAESKeyData(genPassphraseParam, keyData, 
-		                                        TERMINAL_BUFFER_SIZE, true);
-     if(!keyData) { 
-          strncpy(OutMessage, PSTR("Error generating AES key data from passphrase."), 
-		  TERMINAL_BUFFER_SIZE);
-	  free(InParamsCopy);
-	  return COMMAND_ERR_INVALID_USAGE_ID;
+     if(!PassphraseToAESKeyData(keyIndex, genPassphraseParam)) {
+          return COMMAND_INFO_FALSE;
      }
-     SetKeyData(keyIndex, keyData, keyDataByteCount);
-     BufferToHexString(OutMessage, TERMINAL_BUFFER_SIZE, keyData, keyDataByteCount);
-     free(InParamsCopy);
+     BufferToHexString(OutMessage, TERMINAL_BUFFER_SIZE, 
+	               GlobalSettings.KeyData.keys[keyIndex], 
+		       GlobalSettings.KeyData.keyLengths[keyIndex]);
      ActiveConfiguration.KeyChangeAuth -= 1;
      return COMMAND_INFO_OK_WITH_TEXT_ID;
 }

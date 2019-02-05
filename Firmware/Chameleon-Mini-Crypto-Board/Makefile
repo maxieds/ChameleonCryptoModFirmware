@@ -69,12 +69,7 @@ SETTINGS	+= -DDEFAULT_READER_THRESHOLD=400
 #Use EEPROM to store settings
 SETTINGS	+= -DENABLE_EEPROM_SETTINGS
 
-## Setup the default cipher mode and block cipher types here:
-SETTINGS        += -DCIPHER_MODE_TYPE_CTR
-#SETTINGS        += -DCIPHER_MODE_TYPE_CFB
-#SETTINGS        += -DCIPHER_MODE_TYPE_OFB
-#SETTINGS        += -DCIPHER_MODE_TYPE_CBC
-SETTINGS        += -DDEFAULT_COUNTER_SIZE=4 # OR 0 if none needed
+## Setup the default block cipher types here:
 SETTINGS        += -DBLOCK_CIPHER_TYPE_AES128
 #SETTINGS        += -DBLOCK_CIPHER_TYPE_AES256
 
@@ -118,12 +113,12 @@ SRC         += ChameleonCrypto.c ChipLocking.c
 SRC         += $(LUFA_SRC_USB) $(LUFA_SRC_USBCLASS)
 LUFA_PATH    = ../LUFA
 CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DFLASH_DATA_SIZE=$(FLASH_DATA_SIZE) -DSPM_HELPER_ADDR=$(SPM_HELPER_ADDR) \
-		-DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" -DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS) 
-		#-IArduinoCryptoLib/libraries/Crypto -IArduinoCryptoLib/libraries/CryptoLegacy/src
-		#-DEEMEM_DATA_ADDR=$(EEMEM_DATA_ADDR)
-		#-D__EEPROM_REGION_LENGTH__=$(EEMEM_DATA_SIZE) -D__TEXT_REGION_LENGTH__=$(TEXT_DATA_SIZE) 
+		-DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" \
+		-DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS) \
+		-IArduinoCryptoLib 
 LD_FLAGS     =  -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) \
-		-Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR)
+		-Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR) \
+		ArduinoCryptoLib/libAESCrypto.a
 OBJDIR       = Bin
 OBJECT_FILES = 
 
@@ -141,7 +136,7 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 
 # Default target
-all: crypto_utils $(TARGET).hex $(TARGET).bin $(TARGET).elf echo_flash_password
+all: AESCryptoLib $(TARGET).hex $(TARGET).bin $(TARGET).elf echo_flash_password
 
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
@@ -153,12 +148,10 @@ include $(LUFA_PATH)/Build/lufa_cppcheck.mk
 %.hex: %.elf
 	@echo $(MSG_OBJCPY_CMD) Extracting HEX file data from \"$<\"
 	$(CROSS)-objcopy -O ihex -R .eeprom -R .fuse -R .lock -R .signature $(FLASH_DATA_OBJCOPY) $< $@
-	@echo "USER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE)
 
 %.bin: %.elf
 	@echo $(MSG_OBJCPY_CMD) Extracting BIN file data from \"$<\"
 	$(CROSS)-objcopy -O binary -R .eeprom -R .fuse -R .lock -R .signature $(FLASH_DATA_OBJCOPY) $< $@
-	@echo "USER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE)
 
 # Extract SPMHelper in the last 32 Byte of the bootloader section to externally combine it with any bootloader
 spmhelper: $(TARGET).elf
@@ -187,12 +180,8 @@ dfu-prog: $(TARGET).hex $(TARGET).eep
 	dfu-programmer $(MCU) flash $(TARGET).hex
 	dfu-programmer $(MCU) reset
 
-#ArduinoCryptoLib/libCrypto.a: ArduinoCryptoLib/libArduinoCrypto.a
-#	cd ArduinoCryptoLib/host/Crypto && make clean
-#	cd ArduinoCryptoLib/host/Crypto && make \
-		CXX=avr-g++ HOSTARCH_FLAGS="-mmcu=avrxmega7 -DNEED_LIBSTDCPP" chameleon 
-
-crypto_utils: 
+AESCryptoLib: ArduinoCryptoLib/libAESCrypto.a
+	cd ArduinoCryptoLib && make -f Makefile.ExternalCryptoLib
 
 ChameleonCryptoUtils/UtilityBin/EncodeDump:
 	#cd ArduinoCryptoLib/host/Crypto && make clean
@@ -209,7 +198,7 @@ ChameleonCryptoUtils/UtilityBin/EncodeDump:
 		-L`readlink -f ../ArduinoCryptoLib` -lArduinoCryptoLinuxHostVersion
 
 echo_flash_password:
-	@echo "USER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE)
+	@echo -e "\n\nUSER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE) "\n\n"
 
 ## Create a make target to copy the nicely packaged, newly built firmware to the stock
 ## Latest/* directory once we're happy that the testing code works well enough :) 

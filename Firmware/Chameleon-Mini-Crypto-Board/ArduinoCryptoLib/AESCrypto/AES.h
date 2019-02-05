@@ -189,6 +189,7 @@ private:
 
 #endif // CRYPTO_AES_DEFAULT
 
+
 #if defined(CRYPTO_AES_ESP32)
 
 // "hwcrypto/aes.h" includes "rom/aes.h" which defines global enums for

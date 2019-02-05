@@ -10,10 +10,10 @@
 
 #include <stdlib.h>
 
-//#ifdef NEED_LIBSTDCPP
+#ifdef NEED_LIBSTDCPP
     extern "C" void __cxa_pure_virtual();
     void* operator new(size_t objsize);
     void operator delete(void *obj);
-//#endif
+#endif
 
 #endif

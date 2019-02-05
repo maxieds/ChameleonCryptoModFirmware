@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <AESCrypto.h>
+
 #include "XModem.h"
 #include "Terminal.h"
 #include "../ChameleonCrypto.h"
@@ -269,8 +271,9 @@ void XModemTick(void)
 	if(DecryptDumpAfterUpload) {
 	    bool operationStatus = false;
             // create the block cipher, decrypt to plaintext, and then upload into memory: 
-	    Cipher_t decryptCipher = CreateBlockCipherObjectFromKeyIndex(
-		LocalKeyIndex, LocalIVSaltData, LocalIVSaltDataByteCount);
+	    Cipher_t decryptCipher = PrepareBlockCipherObjectFromKeyIndex(
+		LocalKeyIndex, LocalIVSaltData, LocalIVSaltDataByteCount
+	    );
 	    uint8_t *ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
 		      	                         CryptoUploadBufferByteCount);
 	    if(ptextBuf != NULL && ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 
@@ -290,8 +293,9 @@ void XModemTick(void)
 		     uint8_t nextTimeBytes[TERMINAL_BUFFER_SIZE];
 		     size_t nextTimeByteCount = HexStringToBuffer(nextTimeBytes, TERMINAL_BUFFER_SIZE, 
 				                                  nextTimeStr);
-		     decryptCipher = CreateBlockCipherObjectFromKeyIndex(
-		              LocalKeyIndex, nextTimeBytes, nextTimeByteCount);
+		     decryptCipher = PrepareBlockCipherObjectFromKeyIndex(
+		              LocalKeyIndex, nextTimeBytes, nextTimeByteCount
+		     );
 		     ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
 				                 CryptoUploadBufferByteCount);
 		     if(ptextBuf != NULL && ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 
