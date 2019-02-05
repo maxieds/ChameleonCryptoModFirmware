@@ -6,16 +6,16 @@
 #ifndef __AES_CRYPTO_H__
 #define __AES_CRYPTO_H__
 
-#include <stddef.h>
-#include <inttypes.h>
-#include <stdbool.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <stddef.h>
+#include <inttypes.h>
+#include <stdbool.h>
+
 typedef struct AESTiny128 AESTiny128;
-typedef struct AESSmall128 AESCipher_t;
+typedef struct AESTiny128 AESCipher_t;
 
 AESCipher_t * CreateNewCipherObject();
 void DeleteCipherObject(AESCipher_t *cipher);

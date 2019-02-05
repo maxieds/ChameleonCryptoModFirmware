@@ -21,7 +21,7 @@
  */
 
 
-#include <avr/pgmspace.h>
+#include "ProgMemUtil.h"
 #include "AES.h"
 #include "Crypto.h"
 

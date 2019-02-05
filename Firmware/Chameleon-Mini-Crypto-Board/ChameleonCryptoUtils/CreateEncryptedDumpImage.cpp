@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <getopt.h>
@@ -14,40 +15,14 @@
 #include <errno.h>
 #include <time.h>
 
-#include <AES.h>
-#include <CTR.h>
-#include <CFB.h>
-#include <OFB.h>
-#include <CBC.h>
+#include <AESCrypto.h>
+#include <AESCrypto/AES.h>
 
-#define MAX_BUFFER_SIZE              (512)
+typedef AESCipher_t * Cipher_t;
+
+#define MAX_BUFFER_SIZE              (2048)
 #define MAX_KEYDATA_BUFFER_SIZE      (2048)
 static const size_t BITS_PER_BYTE = 8;
-
-#if defined(BLOCK_CIPHER_TYPE_AES128)
-     typedef AES128 BlockCipher_t;
-     #define BLOCK_CIPHER_KEY_BYTE_SIZE (128 / BITS_PER_BYTE)
-#elif defined(BLOCK_CIPHER_TYPE_AES192)
-     typedef AES192 BlockCipher_t;
-     #define BLOCK_CIPHER_KEY_BYTE_SIZE (192 / BITS_PER_BYTE)
-#else
-     typedef AES256 BlockCipher_t;
-     #define BLOCK_CIPHER_KEY_BYTE_SIZE (256 / BITS_PER_BYTE)
-#endif
-
-#if defined(CIPHER_MODE_TYPE_CFB)
-     typedef CFB< BlockCipher_t > Cipher_t;
-     template class CFB< BlockCipher_t >;
-#elif defined(CIPHER_MODE_TYPE_OFB)
-     typedef OFB< BlockCipher_t > Cipher_t;
-     template class OFB< BlockCipher_t >;
-#elif defined(CIPHER_MODE_TYPE_CBC)
-     typedef CBC< BlockCipher_t > Cipher_t;
-     template class CBC< BlockCipher_t >;
-#else
-     typedef CTR< BlockCipher_t > Cipher_t;
-     template class CTR< BlockCipher_t >;
-#endif
 
 typedef enum {
      OPERATION_ENCRYPT = 4, 
@@ -86,8 +61,8 @@ class UtilityExecData_t {
      char keyDataStr[MAX_KEYDATA_BUFFER_SIZE];
      uint8_t keyDataBytes[MAX_KEYDATA_BUFFER_SIZE];
      size_t keyDataByteCount;
-     uint8_t initVecData[MAX_KEYDATA_BUFFER_SIZE];
-     size_t ivLength;
+     //uint8_t initVecData[MAX_KEYDATA_BUFFER_SIZE];
+     //size_t ivLength;
 
      /* Executive tracking of the program: */
      bool optionParsingError;
@@ -105,8 +80,6 @@ class UtilityExecData_t {
 			   keyDataStr(""), 
 			   keyDataBytes{0}, 
 			   keyDataByteCount(0), 
-			   initVecData{0}, 
-			   ivLength(0), 
 			   optionParsingError(false)
 			   {} 
 
@@ -114,13 +87,13 @@ class UtilityExecData_t {
 
 #define MIN(x, y)                    ((x) >= (y) ? (y) : (x))
 
-size_t GetFileBytes(const char *filePath);
-size_t LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, size_t maxBytesToRead);
+int GetFileBytes(const char *filePath);
+int LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, int maxBytesToRead);
 bool WriteBufferToFile(const char *outputPath, uint8_t *fileBuffer, size_t bufByteCount);
 
 size_t HexStringToBuffer(void *Buffer, size_t MaxBytes, const char *HexIn);
-Cipher_t * CreateBlockCipherObject(const uint8_t *keyData, size_t keyLength, 
-	                           const uint8_t *initVecData, size_t ivLength);
+Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength, 
+                                  const uint8_t *initVecData, size_t ivLength);
 
 void PrintUsage(const char *progName) { 
      fprintf(stderr, "Usage: %s [--encrypt] --input-dump-image=<FilePath> ", progName);
@@ -137,8 +110,6 @@ UtilityExecData_t ParseCommandLineData(int argc, char** &argv) {
 	  {"CTR-mode-size",      required_argument, NULL, 0}, 
 	  {"key-data",           required_argument, NULL, 0}, 
 	  {"key-data-file",      required_argument, NULL, 0}, 
-	  {"timestamp-salt",     required_argument, NULL, 0}, 
-	  {"generate-timestamp", required_argument, NULL, 0}, 
 	  {NULL,                 0,                 NULL, 0}
      };
      int option_index = 0, optch;
@@ -200,25 +171,6 @@ UtilityExecData_t ParseCommandLineData(int argc, char** &argv) {
 	       memcpy(runtimeDataOptions.keyDataBytes, keyDataBuf, MIN(keyDataBytes, MAX_KEYDATA_BUFFER_SIZE));
 	       runtimeDataOptions.keyDataByteCount = MIN(keyDataBytes, MAX_KEYDATA_BUFFER_SIZE);
 	  }
-	  else if(!strcmp(long_options_spec[option_index].name, "timestamp-salt")) {
-               size_t expectedBufSize = (strlen(optarg) + 1) / 2;
-               size_t actualBufSize = HexStringToBuffer(runtimeDataOptions.initVecData, 
-			                                MAX_KEYDATA_BUFFER_SIZE, optarg);
-	       runtimeDataOptions.ivLength = actualBufSize;
-	       if(expectedBufSize != actualBufSize) { 
-	            runtimeDataOptions.optionParsingError = true;
-		    break;
-	       }
-	  }
-	  else if(!strcmp(long_options_spec[option_index].name, "generate-timestamp")) { 
-                time_t timeSinceEpoch = time(NULL);
-		fprintf(stdout, "TIMESTAMP (TIME SINCE EPOCH): %lx\n", timeSinceEpoch);
-		char timestampStr[MAX_BUFFER_SIZE];
-		snprintf(timestampStr, MAX_BUFFER_SIZE, "%lx\0", timeSinceEpoch);
-                size_t saltBufSize = HexStringToBuffer(runtimeDataOptions.initVecData, 
-				                       MAX_KEYDATA_BUFFER_SIZE, timestampStr); 
-		runtimeDataOptions.ivLength = saltBufSize;
-	  }
 	  else { 
 	       break;
 	  }
@@ -233,39 +185,53 @@ int main(int argc, char **argv) {
           PrintUsage(argv[0]);
 	  return -1;
      } 
-     else if(runtimeOptions.keyDataByteCount == 0 || runtimeOptions.ivLength == 0 || 
-	     !strlen(runtimeOptions.inputDumpFilePath)) { 
+     else if(runtimeOptions.keyDataByteCount == 0 || !strlen(runtimeOptions.inputDumpFilePath)) { 
           fprintf(stderr, "ERROR: Insufficient data provided which is needed to process the request ...\n");
 	  PrintUsage(argv[0]);
 	  return -2;
      }
      
      if(runtimeOptions.dumpFileOperation == OPERATION_ENCRYPT) { 
-          size_t dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
+          int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
 	  if(!dataBufByteCount) { 
                fprintf(stderr, "ERROR: Reading input dump file \"%s\" ...\n", runtimeOptions.inputDumpFilePath);
 	       return 2;
 	  }
 	  uint8_t *unencDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
-	  if(dataBufByteCount != 
-	     LoadFileIntoBuffer(runtimeOptions.inputDumpFilePath, unencDataBuf, dataBufByteCount)) { 
-               fprintf(stderr, "ERROR: Reading / parsing input dump file \"%s\" ...\n", 
-		       runtimeOptions.inputDumpFilePath);
+	  int actualByteCount = 0;
+	  if(dataBufByteCount != (actualByteCount = 
+	     LoadFileIntoBuffer(runtimeOptions.inputDumpFilePath, unencDataBuf, dataBufByteCount))) { 
+               fprintf(stderr, "ERROR: Reading / parsing input dump file \"%s\" (%d != %d) ...\n", 
+		       runtimeOptions.inputDumpFilePath, dataBufByteCount, actualByteCount);
 	       free(unencDataBuf);
 	       return 3;
 	  }
-	  Cipher_t *cipherObj = CreateBlockCipherObject(runtimeOptions.keyDataBytes, 
+	  uint8_t saltBuf[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00 };
+	  Cipher_t cipherObj = PrepareBlockCipherObject(runtimeOptions.keyDataBytes, 
 		 	                                runtimeOptions.keyDataByteCount, 
-						        runtimeOptions.initVecData, 
-						        runtimeOptions.ivLength);
+							saltBuf, 10);
 	  uint8_t *encDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
-	  cipherObj->encrypt(encDataBuf, unencDataBuf, dataBufByteCount);
-          if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, encDataBuf, dataBufByteCount)) { 
-               fprintf(stderr, "ERROR: Writing encrypted dump buffer back to file ...\n");
+	  size_t blockSize = cipherObj->blockSize();
+	  if(dataBufByteCount % blockSize) { 
+	       fprintf(stderr, "ERROR: ByteCount #%d mod BlockSize %d != 0\n", dataBufByteCount, blockSize);
 	       free(unencDataBuf);
 	       free(encDataBuf);
 	       return 4;
 	  }
+	  for(int b = 0; b < dataBufByteCount / blockSize; b++) { 
+	       fprintf(stdout, "Encrypting block #%d (X%d bytes) of %d ...\n", b + 1, blockSize, 
+		       dataBufByteCount / blockSize);
+	       int blockOffset = blockSize * b;
+	       cipherObj->encryptBlock(encDataBuf + blockOffset, unencDataBuf + blockOffset);
+	  }
+	  fprintf(stdout, "Writing encrypted buffer to file @ \"%s\" ...\n", runtimeOptions.outputDumpFilePath);
+          if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, encDataBuf, dataBufByteCount)) { 
+               fprintf(stderr, "ERROR: Writing encrypted dump buffer back to file ...\n");
+	       free(unencDataBuf);
+	       free(encDataBuf);
+	       return 5;
+	  }
+	  fprintf(stdout, "DONE!\n");
 	  free(unencDataBuf); unencDataBuf = NULL;
 	  free(encDataBuf); encDataBuf = NULL;
 	  delete cipherObj; cipherObj = NULL;
@@ -275,53 +241,64 @@ int main(int argc, char **argv) {
 
 }
 
-size_t GetFileBytes(const char *filePath) { 
+int GetFileBytes(const char *filePath) { 
      struct stat statStructBuf;
      int statSuccessCode = stat(filePath, &statStructBuf);
      if(statSuccessCode == 0) { 
-          return statStructBuf.st_size;
+          return statStructBuf.st_size == 0 ? 0 : statStructBuf.st_size - 1;
      }
      return 0;
 }
 
-size_t LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, size_t maxBytesToRead) { 
-     FILE *fpInputBuffer = fopen(filePath, "r+");
-     if(!fpInputBuffer) { 
+int LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, int maxBytesToRead) { 
+     int fpInputBuffer = open(filePath, O_RDONLY | O_NONBLOCK, 0);
+     if(fpInputBuffer == -1) { 
           perror("LoadFileIntoBuffer: Opening file ");
 	  return 0;
      }
-     size_t bytesRead = 0;
+     int bytesRead = 0, rbytes;
      uint8_t *curContentsBufPtr = contentsBuffer;
-     while((bytesRead <= maxBytesToRead) && !feof(fpInputBuffer)) { 
-          if(fread(curContentsBufPtr, sizeof(uint8_t), 1, fpInputBuffer) != 1) { 
-	       perror("LoadFileIntoBuffer: Reading into buffer ");
-	       return 0;
+     sleep(1);
+     while(bytesRead < maxBytesToRead) { 
+          if((rbytes = read(fpInputBuffer, (uint8_t *) curContentsBufPtr, maxBytesToRead)) != maxBytesToRead && 
+	     errno != 0) { 
+	       perror("LoadFileIntoBuffer: Reading into buffer incorrect byte count ");
 	  }
-	  curContentsBufPtr++;
-	  bytesRead++;
+	  curContentsBufPtr += rbytes;
+	  bytesRead += rbytes;
+	  if(errno == 0 && bytesRead < maxBytesToRead) { // we encountered a non-terminal EOF character:
+	       *curContentsBufPtr = EOF;
+	       if(rbytes == 0) { 
+	            bytesRead++;
+	       }
+	  }
+	  fprintf(stderr, "Total bytes read = % 9d\n", bytesRead);
      }
+     close(fpInputBuffer);
      return bytesRead;
 } 
 
 bool WriteBufferToFile(const char *outputPath, uint8_t *fileBuffer, size_t bufByteCount) {
-     FILE *fpOutputBuffer = fopen(outputPath, "w+");
+     FILE *fpOutputBuffer = fopen(outputPath, "wb");
      if(!fpOutputBuffer) { 
           perror("WriteBufferToFile: Opening output file for buffer writing ");
 	  return false;
      
      }
-     size_t numBytesWritten = 0;
+     int numBytesWritten = 0, wbytes;
      uint8_t *curFileBufPtr = fileBuffer;
      while(numBytesWritten < bufByteCount) { 
-          if(fwrite(curFileBufPtr, sizeof(uint8_t), 1, fpOutputBuffer) != 1) { 
+          if((wbytes = write(fileno(fpOutputBuffer), curFileBufPtr, bufByteCount)) == -1) { 
                perror("WriteBufferToFile: Writing buffer bytes out to file");
-	       return false;
 	  }
-	  curFileBufPtr++;
-	  numBytesWritten++;
+	  else if(wbytes != -1) {
+	       curFileBufPtr += bufByteCount;
+	       numBytesWritten += bufByteCount;
+	       break;
+	  }
      }
      fclose(fpOutputBuffer);
-     return true;
+     return numBytesWritten == bufByteCount;
 }
 
 #define NIBBLE_TO_HEXCHAR(x) ( (x) < 0x0A ? (x) + '0' : (x) + 'A' - 0x0A )
@@ -359,15 +336,22 @@ size_t HexStringToBuffer(void* Buffer, size_t MaxBytes, const char* HexIn) {
     return ByteCount;
 }
 
-Cipher_t * CreateBlockCipherObject(const uint8_t *keyData, size_t keyLength, 
-	                           const uint8_t *initVecData, size_t ivLength) { 
-     Cipher_t *cipherObj = new Cipher_t();
-     cipherObj->setKey(keyData, keyLength);
-     cipherObj->setIV(initVecData, ivLength);
-     #ifdef CIPHER_MODE_TYPE_CTR
-     if(DEFAULT_COUNTER_SIZE > 0) {
-          cipherObj->setCounterSize(DEFAULT_COUNTER_SIZE);
+Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,  
+		                  const uint8_t *initVecData, size_t ivLength) { 
+     Cipher_t cipherObj = CreateNewCipherObject();
+     if(cipherObj == NULL || keyData == NULL || !keyLength || initVecData == NULL || !ivLength) {
+          return cipherObj;
      }
-     #endif
-     return cipherObj;
+     // use the salt with the keyData to generate a new key for the operation:
+     uint8_t *saltedKey = (uint8_t *) malloc(keyLength * sizeof(uint8_t));
+     memcpy(saltedKey, keyData, keyLength);
+     for(int ctr = 0; ctr < MIN(keyLength, ivLength); ctr++) {
+          saltedKey[ctr] = keyData[ctr] ^ initVecData[ctr];
+     }
+     if(SetCipherKey(cipherObj, saltedKey, keyLength)) { 
+          return cipherObj;
+     }
+     DeleteCipherObject(cipherObj);
+     return NULL;
 }
+

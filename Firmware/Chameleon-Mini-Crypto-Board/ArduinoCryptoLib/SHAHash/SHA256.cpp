@@ -20,10 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <avr/pgmspace.h>
-
 #include "SHA256.h"
 #include "../AESCrypto/Crypto.h"
+#include "../AESCrypto/ProgMemUtil.h"
 #include "RotateUtil.h"
 #include "EndianUtil.h"
 #include <string.h>

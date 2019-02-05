@@ -116,9 +116,10 @@ CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DF
 		-DBUILD_DATE=\"$(BUILD_DATE)\" -DCOMMIT_ID=\"$(COMMIT_ID)\" \
 		-DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS) \
 		-IArduinoCryptoLib 
-LD_FLAGS     =  -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) \
+LD_FLAGS     = -Wl,--start-group -Wl,--as-needed \
+	       -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) \
 		-Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR) \
-		ArduinoCryptoLib/libAESCrypto.a
+		-LArduinoCryptoLib -lAESCrypto
 OBJDIR       = Bin
 OBJECT_FILES = 
 
@@ -136,7 +137,8 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 
 # Default target
-all: AESCryptoLib $(TARGET).hex $(TARGET).bin $(TARGET).elf echo_flash_password
+default: ChameleonCryptoUtils/UtilityBin/EncodeDump AESCryptoLib \
+	$(TARGET).hex $(TARGET).bin $(TARGET).elf echo_flash_password
 
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
@@ -181,21 +183,18 @@ dfu-prog: $(TARGET).hex $(TARGET).eep
 	dfu-programmer $(MCU) reset
 
 AESCryptoLib: ArduinoCryptoLib/libAESCrypto.a
+	cd ArduinoCryptoLib && make -f Makefile.ExternalCryptoLib clean
 	cd ArduinoCryptoLib && make -f Makefile.ExternalCryptoLib
 
 ChameleonCryptoUtils/UtilityBin/EncodeDump:
-	#cd ArduinoCryptoLib/host/Crypto && make clean
-	#cd ArduinoCryptoLib/host/Crypto && make \
-		CXX="g++ -Wl,--start-group -Wl,--no-as-needed -lstdc++ -frtti --std=c++11" \
-		linux_box_testing
-	#cd ChameleonCryptoUtils && g++ CreateEncryptedDumpImage.cpp -c \
-		-Wl,--start-group -Wl,--no-as-needed -std=c++11 -lstdc++ \
-		-frtti -I/usr/include -I`readlink -f ../ArduinoCryptoLib/libraries/Crypto` \
-		-I`readlink -f ../ArduinoCryptoLib/libraries/CryptoLegacy/src` \
-		-L`readlink -f ../ArduinoCryptoLib` -lArduinoCryptoLinuxHostVersion
-	#cd ChameleonCryptoUtils && g++ -o UtilityBin/EncodeDump CreateEncryptedDumpImage.o \
+	cd ArduinoCryptoLib && make -f Makefile.ExternalCryptoLibLinux clean && \
+		make -f Makefile.ExternalCryptoLibLinux
+	cd ChameleonCryptoUtils && g++ CreateEncryptedDumpImage.cpp -c \
+		-Wl,--start-group -Wl,--no-as-needed -Wall -std=c++11 -lstdc++ \
+		-frtti -I/usr/include -I`readlink -f ../ArduinoCryptoLib`
+	cd ChameleonCryptoUtils && g++ -o UtilityBin/EncodeDump CreateEncryptedDumpImage.o \
 		-Wl,--start-group -Wl,--no-as-needed -std=c++11 -lstdc++ -frtti \
-		-L`readlink -f ../ArduinoCryptoLib` -lArduinoCryptoLinuxHostVersion
+		-L`readlink -f ../ArduinoCryptoLib` -lAESCryptoLinux
 
 echo_flash_password:
 	@echo -e "\n\nUSER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE) "\n\n"

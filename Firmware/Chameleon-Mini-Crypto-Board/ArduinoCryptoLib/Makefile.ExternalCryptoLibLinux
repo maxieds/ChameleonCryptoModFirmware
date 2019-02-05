@@ -1,18 +1,14 @@
 
 .PHONY: all clean check
 
-LIBRARY = libAESCrypto.a
+LIBRARY = libAESCryptoLinux.a
 
-LD=avr-g++
-CXX=avr-g++
-HOSTARCH_FLAGS=-mmcu=avrxmega7 -D__AVR_ATxmega128A4U__ -DHOST_BUILD -DNEED_LIBSTDCPP\
-	       -D__cplusplus
-CPPFLAGS = -Wl,--export-dynamic -fPIC -O0 -Wl,--as-needed
+CXX=g++
+HOSTARCH_FLAGS= -march=$(shell uname -m | tr "_" "-") -DLINUX_HOST_BUILD
+CPPFLAGS = 
 CXXFLAGS = -g -Wall $(CPPFLAGS) $(HOSTARCH_FLAGS)
 
 SOURCES = \
-	AESCrypto.cpp \
-	SHAHash.cpp \
 	AESCrypto/AES128.cpp \
 	AESCrypto/AES192.cpp \
 	AESCrypto/AES256.cpp \
@@ -21,15 +17,16 @@ SOURCES = \
 	AESCrypto/BlockCipher.cpp \
 	AESCrypto/Crypto.cpp \
 	SHAHash/Hash.cpp \
-	SHAHash/SHA256.cpp
+	SHAHash/SHA256.cpp \
+	AESCrypto.cpp \
+	SHAHash.cpp
 OBJECTS = $(patsubst %.cpp,%.o,$(SOURCES))
 
 default: $(LIBRARY)
 
 $(LIBRARY): $(OBJECTS)
 	$(RM) $(LIBRARY)
-	#avr-nm $(LIBRARY)
-	$(AR) rcv $(LIBRARY) $(OBJECTS)
+	$(AR) cr $(LIBRARY) $(OBJECTS)
 
 clean:
 	$(RM) -f $(OBJECTS) $(LIBRARY)
