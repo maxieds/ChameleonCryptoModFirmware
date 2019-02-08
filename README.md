@@ -137,7 +137,7 @@ serial terminal:
 ```
 $ sudo apt-get install socat lrzsz
 $ socat - /dev/ttyACM0,crnl
-   > UPLOAD_ENCRYPTED
+   > do UPLOAD_ENCRYPTED command as normal (or via the ChameleonMiniUSBInterface library in Android)
 // Meanwhile in another terminal window: 
 $ sx EncMF1KDump.edmp | socat FILE:/dev/ttyACM0,b115200,raw -
 ```
@@ -432,7 +432,7 @@ may now be repeated and followed thusly in testing out the API's functionality.
 [here (secondard)](https://embedds.com/all-you-need-to-know-about-avr-fuses/)
 * Note: It may be possible to set a flash / erase (EEPROM) password or key with ``avrdude`` directly; 
 
-# TODO (for Maxie / "the developer") 
+# TODO List (for Maxie, aka  "the developer") 
 
 * Add custom debugging / logging codes associated with loading the encrypted dumps and the new 
 key storage routines. 
