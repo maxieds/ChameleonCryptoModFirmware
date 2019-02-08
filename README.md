@@ -383,5 +383,4 @@ TODO
 
 * Add custom debugging / logging codes associated with loading the encrypted dumps and the new 
 key storage routines. 
-* Explore hacking the firmware source and ``gdb-avr`` utilities for debugging? 
 

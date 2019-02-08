@@ -98,10 +98,10 @@ Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,
                                   const uint8_t *initVecData, size_t ivLength, bool setSalt = true);
 
 void PrintUsage(const char *progName) { 
-     fprintf(stderr, "Usage: %s [--encrypt] --input-dump-image=<FilePath> ", progName);
-     fprintf(stderr, "[--output-dump-image=<FilePath>]\n");
-     fprintf(stderr, "       [--CTR-mode-size=<Bytes>] [--key-data=<HexDataString>]\n");
-     fprintf(stderr, "       [--key-data-file=<FilePath>]\n");
+     fprintf(stderr, "Usage: %s [--encrypt|--decrypt]\n", progName);
+     fprintf(stderr, "       --input-dump-image=<FilePath>\n");
+     fprintf(stderr, "       [--output-dump-image=<FilePath>]\n");
+     fprintf(stderr, "       [--key-data=<HexDataString=32HexChars>]\n\n");
 }
 
 UtilityExecData_t ParseCommandLineData(int argc, char** &argv) { 
