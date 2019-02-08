@@ -151,10 +151,35 @@ Chameleon Mini RevG boards are documented below in this section.
 
 ### Description
 
+Mechanism by which we may load new key data into the short list of tracked key data 
+stored within the modified firmware. This requires authentication via a "*backdoor*" 
+flash lock password specified at compile time (typically, by default, the unquoted string 
+*MyFlashLockPwd11:-)*). 
+The *Makefile* option to change this default password setting is as follows: 
+```
+## Specify the default passphrase needed to flash / lock / unlock the device:
+FLASH_LOCK_PASSPHRASE = $(shell ./BuildScripts/GetUserFlashPassword.sh | tail -n 1)
+SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"$(FLASH_LOCK_PASSPHRASE)\"
+```
+
 ### Usage
+
+```
+KEYAUTH FlashLockPassword [NumberOfKeyChangesToAuth=1]
+```
+* *FlashLockPassword* : Typically defined to be *MyFlashLockPwd11:-)*
+unless otherwise specified at compile time (you know who you are if/when this happens); 
+* *NumberOfKeyChangesToAuth* : Specify the (fixed, finite) number of key change operations 
+to allow after authenticating with the correct *FlashLockPassword* string. This setting 
+defaults to the singular allowed change by specified if not otherwise manually reset on the 
+command line. 
 
 ### Example
 
+```
+KEYAUTH MyFlashLockPwd11:-) 10
+TODO
+```
 
 ## New command: SETKEY 
 
