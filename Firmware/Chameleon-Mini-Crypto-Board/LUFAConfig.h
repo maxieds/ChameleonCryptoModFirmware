@@ -63,7 +63,9 @@
 //        #define NO_SOF_EVENTS
 
         /* USB Device Mode Driver Related Tokens: */
+//         #define ARCH_HAS_MULTI_ADDRESS_SPACE
 //        #define USE_RAM_DESCRIPTORS
+//        #define USE_SRAM_DESCRIPTORS
         #define USE_FLASH_DESCRIPTORS
 //        #define USE_EEPROM_DESCRIPTORS
 //        #define NO_INTERNAL_SERIAL

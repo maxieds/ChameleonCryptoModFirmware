@@ -138,7 +138,7 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 # Default target
 default: ChameleonCryptoUtils/UtilityBin/EncodeDump AESCryptoLib \
-	$(TARGET).hex $(TARGET).bin $(TARGET).elf echo_flash_password
+	$(TARGET).hex $(TARGET).eep $(TARGET).bin $(TARGET).elf echo_flash_password
 
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk

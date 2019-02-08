@@ -131,7 +131,6 @@ void TerminalTask(void)
     if (TerminalState == TERMINAL_INITIALIZED) {
         CDC_Device_USBTask(&TerminalHandle);
         USB_USBTask();
-
         ProcessByte();
     }
 }
@@ -139,7 +138,6 @@ void TerminalTask(void)
 void TerminalTick(void)
 {
     SenseVBus();
-
     if (TerminalState == TERMINAL_INITIALIZED) {
         XModemTick();
         CommandLineTick();
@@ -169,6 +167,8 @@ void EVENT_USB_Device_ConfigurationChanged(void)
 void EVENT_USB_Device_ControlRequest(void)
 {
     CDC_Device_ProcessControlRequest(&TerminalHandle);
+    TerminalBuffer[0] = '\0';
+    TerminalState = TERMINAL_INITIALIZED;
 }
 
 

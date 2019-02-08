@@ -1,13 +1,13 @@
 /*
              LUFA Library
-     Copyright (C) Dean Camera, 2015.
+     Copyright (C) Dean Camera, 2019.
 
   dean [at] fourwalledcubicle [dot] com
            www.lufa-lib.org
 */
 
 /*
-  Copyright 2015  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  Copyright 2019  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
   Permission to use, copy, modify, distribute, and sell this
   software and its documentation for any purpose is hereby granted
@@ -240,11 +240,11 @@
 			/** Selects the Arduino Micro specific board drivers, including the driver for the board LEDs. */
 			#define BOARD_MICRO                58
 
-			/** Selects the Atmel Xplained-MINI specific board drivers, including the driver for the board LEDs. */
-			#define BOARD_XPLAINED_MINI        59
+			/** Selects the Pololu A-Star Micro specific board drivers, including the driver for the board LEDs. */
+			#define BOARD_POLOLUMICRO          59
 
-                        /** For the sake of completeness: ChameleonMiniCryptoBoard(RevG): **/
-                        #define BOARD_CHAMELEON_MINI_CRYPTO 0xB2
+			/** Selects the Atmel Xplained-MINI specific board drivers, including the driver for the board LEDs. */
+			#define BOARD_XPLAINED_MINI        60
 
 			#if !defined(__DOXYGEN__)
 				#define BOARD_                 BOARD_NONE
