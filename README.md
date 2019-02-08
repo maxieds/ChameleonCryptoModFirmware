@@ -136,7 +136,7 @@ then proceed to communicate with the device as if the original firmware installa
 serial terminal: 
 ```
 $ sudo apt-get install socat lrzsz
-$ socat - /dev/ttyACM0,crnl
+$ socat - /dev/ttyACM0,crnl,raw,echo=0 
    > do UPLOAD_ENCRYPTED command as normal (or via the ChameleonMiniUSBInterface library in Android)
 // Meanwhile in another terminal window: 
 $ sx EncMF1KDump.edmp | socat FILE:/dev/ttyACM0,b115200,raw -
