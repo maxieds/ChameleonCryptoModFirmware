@@ -245,7 +245,7 @@ A debugging command to print out the HEX-valued ASCII strings associated with th
 key data for each registered key currently being tracked in the firmware. 
 Note that this command is enabled by default in the stock *Makefile* that ships with this 
 modification of the firmware source, but is of course sanely turned off by compile time 
-C-style **&amp;ifdef ...** preprocessor macros by updating the *Makefile* options to the 
+C-style **&#35;ifdef ...** preprocessor macros by updating the *Makefile* options to the 
 following settings:
 ```
 #SETTINGS += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key storage data for debugging?
@@ -370,6 +370,59 @@ TODO
 
 # Testing and crypto dump utilities
 
+## Basic encryption scheme specs
+
+Since Simon has graciously granted me free will to implement the crypto standard for the uploaded MF1K dump 
+images as best as I can get them running on the Chameleon RevG hardware, we are in need of a local 
+(read: Linux command line) utility to create the encrypted dump images for testing with the Chameleon board. 
+Given an initial unencoded binary dump file representing a MF1K image that can be initialized into the 
+Chameleon's active memory slot with a call to the pre-existing stock **UPLOAD** command, we also require the 
+convention that the dump image be prepended with an ASCII-plaintext header tag (namely, the string 
+"*MFCLASSIC1K-DMP*" without the quotes): 
+```
+# Shell commands to create the base unencrypted dump images:
+$ cd ./Firmware/Chameleon-Mini-Crypto-Board/ChameleonCryptoUtils/MF1KDumpSamples
+$ export INITDMPIMGBASE=3E46-E4ED-516D.dmp
+$ echo "MFCLASSIC1K-DMP" > $INITDMPIMGBASE
+$ cat "${INITDMPIMGBASE}-dist" >> $INITDMPIMGBASE
+```
+The rationale behind prepending a header tag to the data we encrypt is to add another verification 
+mechanism that we are correctly decrypting the image into a non-garbage binary buffer for loading into 
+Chameleon memory at slot &#35;X. That is, it is so unprobable that we could incorrectly decrypt the image and 
+still have this key chunk of header text be accurate as intended that if the first few bytes of the 
+decrypted dump image match this header string, we will assume that we have correctly decrypted the dump 
+image. This scheme is not entirely unlike the *Authenticated encryption with associated data (AEAD)* crypto 
+schemes which are supported by the unmodified (untrimmed) source for the library we utilize for 
+crypto (e.g., the [ChaChaPoly scheme](http://rweather.github.io/arduinolibs/classChaChaPoly.html#details), among 
+a couple of noteworthy others). After we prepend the header tag to the base dump image data, we will then 
+proceed to perform decryption (encryption by API or external command line utility) using a standardized 
+*AES128* block cipher endowed with the standardized *CFB* cipher mode.
+
+## Testing out (verifying) the library code is implemented correctly via our subroutines
+
+Let's work on the problem of generating the appropriate encrypted dump images for us to test with the new 
+Chameleon Mini **UPLOAD_ENCRYPTED** command. For example, observe:
+```
+$ cd .. && make clean && make && cd ChameleonCryptoUtils
+$ UtilityBin/EncodeDump --encrypt --input-dump-image=MF1KDumpSamples/3E46-E4ED-516D.dmp --key-data=1234567890ABCDEF1234567890ABCDEF
+$ UtilityBin/EncodeDump --decrypt --input-dump-image=MF1KDumpSamples/3E46-E4ED-516D.edmp --key-data=1234567890ABCDEF1234567890ABCDEF
+$ diff MF1KDumpSamples/3E46-E4ED-516D.dmp MF1KDumpSamples/3E46-E4ED-516D.pdmp
+```
+The source repository features the encrypted dumps resulting from running the encryption command above 
+on each of the three prepared sample dump files:
+```
+$ ls MF1KDumpSamples/*.edmp
+MF1KDumpSamples/3E46-E4ED-516D.edmp  MF1KDumpSamples/8956-1972-D463.edmp
+MF1KDumpSamples/5076-4309-1469.edmp
+```
+At this point, we are ready to 
+[load up some new key data](https://github.com/maxieds/ChameleonCryptoModFirmware#new-chameleon-mini-command-set) 
+and then test out the encrypted dump 
+[upload functionality](https://github.com/maxieds/ChameleonCryptoModFirmware#new-command-upload_encrypted) 
+on a live Chameleon Mini device. 
+The basic instructions for communicating with the Chameleon over a serial USB terminal 
+[described here](https://github.com/maxieds/ChameleonCryptoModFirmware#flashing-the-firmware) 
+may now be repeated and followed thusly in testing out the API's functionality. 
 
 # Reading and resources on locking features of the AVR ATMega128 chips in the Chameleon boards
 
