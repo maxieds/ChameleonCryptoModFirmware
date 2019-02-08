@@ -95,7 +95,7 @@ COMPILER_PATH      ?=
 BOARD              ?= NONE
 OPTIMIZATION       ?= 0
 F_CPU              ?=
-C_STANDARD         ?= gnu99 #gnu99
+C_STANDARD         ?= gnu99
 CPP_STANDARD       ?= c++11
 C_FLAGS            ?= -Waddr-space-convert #-g -gdwarf-2 -gstrict-dwarf
 CPP_FLAGS          ?= -Wall -Wextra -Wno-narrowing -Wformat -Wtrampolines \
@@ -268,9 +268,8 @@ mostlyclean:
 	rm -f $(OBJECT_FILES)
 	@echo $(MSG_REMOVE_CMD) Removing dependency files of \"$(TARGET)\"
 	rm -f $(DEPENDENCY_FILES)
-	#make -f ArduinoCryptoLib/host/Crypto/Makefile clean
-	#rm -f ArduinoCryptoLib/*.a
-	#rm -f ChameleonCryptoUtils/*.{o,code} ChameleonCryptoUtils/UtilityBin/*
+	cd ArduinoCryptoLib && make -f Makefile.ExternalCryptoLib clean
+	cd ChameleonCryptoUtils && rm -f *.o UtilityBin/*
 
 # Cleans all build files, leaving only the original source code
 clean: mostlyclean

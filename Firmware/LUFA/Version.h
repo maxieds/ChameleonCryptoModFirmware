@@ -46,7 +46,7 @@
 			#define LUFA_VERSION_INTEGER     0x151115
 
 			/** Indicates the version number of the library, as a string. */
-			#define LUFA_VERSION_STRING      "151115"
+			#define LUFA_VERSION_STRING      "151115-CMCB-Mod"
 
 #endif
 

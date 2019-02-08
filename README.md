@@ -81,8 +81,11 @@ Additionally, we have included the following defines configured via the customiz
 *Makefile* setup we have created here:
 ```
 ## Specify the default passphrase needed to flash / lock / unlock the device:
+FLASH_LOCK_PASSPHRASE = $(shell ./BuildScripts/GetUserFlashPassword.sh | tail -n 1)
 SETTINGS        += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key storage data for debugging?
-SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"MyFlashLockPwd11\"
+SETTINGS        += -DREQUIRE_PASSPHRASE_TO_LOCK_CHIP=0 # Descriptively named setting ... 
+SETTINGS        += -DENABLE_CHIP_UNLOCKING=1 # Let users unlock the chip (with passphrase auth)? 
+SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"$(FLASH_LOCK_PASSPHRASE)\"
 SETTINGS        += -DPRIu16=\"PRIu16\"
 ```
 
@@ -209,6 +212,35 @@ with text the hexadecimal string value of the key data just updated by the comma
 ChameleonMiniSerialTerminal$ GENKEY 2 MyNewKeyDataPassphrase0123*#$%^!
 ```
 
+## New command: GETKEY
+
+### Description
+
+A debugging command to print out the HEX-valued ASCII strings associated with the 
+key data for each registered key currently being tracked in the firmware. 
+Note that this command is enabled by default in the stock *Makefile* that ships with this 
+modification of the firmware source, but is of course sanely turned off by compile time 
+C-style **&amp;ifdef ...** preprocessor macros by updating the *Makefile* options to the 
+following settings:
+```
+#SETTINGS += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key storage data for debugging?
+```
+
+### Usage
+
+```
+GETKEY AESKeyIndex
+```
+* *AESKeyIndex* : a single decimal digit in the range 0-3 indicating the 
+key index to grok internally stored data from.
+
+### Example
+
+```
+GETKEY 0
+TODO
+```
+
 ## New command: UPLOAD_ENCRYPTED
 
 ### Description
@@ -238,25 +270,78 @@ TODO
 
 ### Description
 
+Check on the status of a pending or recently processed **UPLOAD_ENCRYPTED** command 
+issued to load an encrypted Mifare1K dump image into memory. 
+
 ### Usage
 
+```
+UPLOAD_STATUS
+```
+* No parameters are passed to this command
+
 ### Example
+
+```
+UPLOAD_STATUS
+TODO
+TODO
+TODO
+```
 
 ## New command: LOCK_CHIP
 
 ### Description
 
+A wrapper command which locks the EEPROM and memory bits on the Chameleon's on-board 
+*ATXMega128a4u* chip. Note that if the directive **REQUIRE_PASSPHRASE_TO_LOCK_CHIP** is 
+set to a non-zero value in the *Makefile*, then a password (i.e., the default backdoor 
+flash password specified at compile time) is required as a *non-optional* argument to the 
+command. Failure to authenticate with the appropriate password (if necessary per build 
+congiguration) will result in an error and the operation failing without changing the 
+current status of the lock bits on the chip. 
+
 ### Usage
 
+```
+LOCK_CHIP [FlashLockPassword]
+```
+* *FlashLockPassword* : Typically defined to be *MyFlashLockPwd11:-)* 
+unless otherwise specified at compile time (you know who you are if/when this happens).
+
 ### Example
+
+```
+LOCK_CHIP
+TODO
+```
+OR 
+```
+LOCK_CHIP MyFlashLockPwd11:-)
+```
 
 ## New command: UNLOCK_CHIP
 
 ### Description
 
+The counterpart and effective reversal operation for the **LOCK_CHIP** command 
+documented above. Notice that this command will only (possibly) succeed if the 
+*Makefile* option **ENABLE_CHIP_UNLOCKING** is set to a non-zero value at compile time. 
+
 ### Usage
 
+```
+UNLOCK_CHIP FlashLockPassword
+```
+* *FlashLockPassword* : Typically defined to be *MyFlashLockPwd11:-)* 
+unless otherwise specified at compile time (you know who you are if/when this happens).
+
 ### Example
+
+```
+UNLOCK_PASSWORD MyFlashLockPwd11:-)
+TODO
+```
 
 # Testing and crypto dump utilities
 
