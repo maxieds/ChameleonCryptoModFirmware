@@ -154,7 +154,7 @@ Chameleon Mini RevG boards are documented below in this section.
 Mechanism by which we may load new key data into the short list of tracked key data 
 stored within the modified firmware. This requires authentication via a "*backdoor*" 
 flash lock password specified at compile time (typically, by default, the unquoted string 
-*MyFlashLockPwd11:-)*). 
+"*MyFlashLockPwd11:-)*"). 
 The *Makefile* option to change this default password setting is as follows: 
 ```
 ## Specify the default passphrase needed to flash / lock / unlock the device:
