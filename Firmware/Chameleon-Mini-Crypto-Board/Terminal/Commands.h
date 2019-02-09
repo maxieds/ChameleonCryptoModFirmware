@@ -7,7 +7,7 @@
 
 #define MAX_COMMAND_LENGTH          32
 #define MAX_STATUS_LENGTH           128
-#define MAX_COMMAND_ARGLEN          32
+#define MAX_COMMAND_ARGLEN          48
 
 #define COMMAND_INFO_OK_ID              100
 #define COMMAND_INFO_OK                 "OK"

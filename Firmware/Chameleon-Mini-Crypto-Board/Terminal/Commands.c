@@ -718,25 +718,20 @@ CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InPara
 	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
      size_t authPassphraseLen = 0, numApprovedEdits = 0;
-     const char *numAuthedEditsStr = strchr(InParams, COMMAND_ARGSEP);
+     const char *numAuthedEditsStr = strchrnul(InParams, COMMAND_ARGSEP);
      char authPassphrase[MAX_COMMAND_ARGLEN + 1];
-     if(numAuthedEditsStr == NULL) { 
-          authPassphraseLen = strchrnul(InParams, COMMAND_ARGSEP) - InParams;
-     }
-     else {
-          authPassphraseLen = numAuthedEditsStr - InParams;
-	  numAuthedEditsStr++;
-     }
-     strncpy(authPassphrase, InParams, authPassphraseLen + 1);
+     authPassphraseLen = numAuthedEditsStr - InParams;
+     strncpy(authPassphrase, InParams, authPassphraseLen);
+     authPassphrase[authPassphraseLen] = '\0';
      if(!AuthLockByPassphrase(authPassphrase)) { 
           strncpy_P(OutMessage, PSTR("Incorrect authentication passphrase specified."), TERMINAL_BUFFER_SIZE);
 	  return COMMAND_ERR_AUTH_FAILED_ID;
      }
-     else if(numAuthedEditsStr == NULL) {
+     else if(*numAuthedEditsStr == '\0') {
           numApprovedEdits = 1;
      }
      else {
-          char *nextArgDelim = strchrnul(numAuthedEditsStr, COMMAND_ARGSEP);
+          char *nextArgDelim = strchrnul(++numAuthedEditsStr, COMMAND_ARGSEP);
 	  if(*nextArgDelim == '\0') {
                numApprovedEdits = atoi(numAuthedEditsStr);
 	  }
@@ -750,99 +745,105 @@ CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InPara
 }
 
 CommandStatusIdType CommandExecParamSetKey(char *OutMessage, const char *InParams) { 
-     if(ActiveConfiguration.KeyChangeAuth <= 0) {
-          strncpy(OutMessage, PSTR("Not authenticated to change the key data at this time."), 
-		  TERMINAL_BUFFER_SIZE);
+     if(InParams == NULL || InParams[0] == '\0') {
+          return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     else if(ActiveConfiguration.KeyChangeAuth <= 0) {
           return COMMAND_ERR_AUTH_FAILED_ID;
      }
-     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
-     strcpy(InParamsCopy, InParams);
-     char *keyIdxParam = strtok(InParamsCopy, COMMAND_ARGSEP);
-     int keyIndex = 0;
-     if(keyIdxParam == NULL || ((keyIndex = atoi(keyIdxParam)) < 0) || (keyIndex >= NUM_KEYS_STORAGE)) { 
-          strncpy(OutMessage, PSTR("Missing or invalid KeyIndex parameter."), TERMINAL_BUFFER_SIZE);
-	  free(InParamsCopy);
-	  return COMMAND_ERR_INVALID_PARAM_ID;
+     size_t keyIndexStrLen = 0, keyDataStrLen = 0;
+     const char *keyDataStr = strchrnul(InParams, COMMAND_ARGSEP);
+     char *nullBytePos = strchrnul(++keyDataStr, COMMAND_ARGSEP);
+     if(*keyDataStr == '\0' || *nullBytePos != '\0' || nullBytePos == keyDataStr) {
+          strncpy_P(OutMessage, PSTR("Invalid number of parameters specified."), TERMINAL_BUFFER_SIZE);
+          return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     char *keyDataParam = strtok(NULL, COMMAND_ARGSEP);
-     if(keyDataParam == NULL) { 
-         strncpy(OutMessage, PSTR("Missing or invalid KeyData parameter."), TERMINAL_BUFFER_SIZE);
-	 free(InParamsCopy);
-	 return COMMAND_ERR_INVALID_PARAM_ID;
+     keyIndexStrLen = keyDataStr - InParams;
+     keyDataStrLen = nullBytePos - keyDataStr;
+     if(keyIndexStrLen == 0 || keyDataStrLen == 0 || (keyIndexStrLen + 1) > MAX_COMMAND_ARGLEN) {
+          return COMMAND_ERR_INVALID_USAGE_ID;
      }
-     uint8_t keyDataBytes[TERMINAL_BUFFER_SIZE];
-     uint16_t keyDataByteCount = HexStringToBuffer(keyDataBytes, TERMINAL_BUFFER_SIZE, keyDataParam);
-     SetKeyData(keyIndex, keyDataBytes, keyDataByteCount);
-     free(InParamsCopy);
+     char keyIndexStr[MAX_COMMAND_ARGLEN];
+     strncpy(keyIndexStr, InParams, keyIndexStrLen);
+     keyIndexStr[keyIndexStrLen] = '\0';
+     int keyIndex = atoi(keyIndexStr);
+     if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE) {
+          strncpy_P(OutMessage, PSTR("Invalid key index specified."), TERMINAL_BUFFER_SIZE);
+	  return COMMAND_ERR_INVALID_USAGE_ID;
+     }
+     uint8_t keyDataBytes[MAX_KEY_LENGTH];
+     uint16_t keyDataByteCount = HexStringToBuffer(keyDataBytes, MAX_KEY_LENGTH, keyDataStr);
+     if(!SetKeyData(keyIndex, keyDataBytes, keyDataByteCount)) {
+          return COMMAND_INFO_FALSE_ID;
+     }
      ActiveConfiguration.KeyChangeAuth -= 1;
      return COMMAND_INFO_OK_ID;
 }
 
 CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParams) { 
-     if(ActiveConfiguration.KeyChangeAuth <= 0) {
-          strncpy(OutMessage, PSTR("Not authenticated to change the key data at this time."), 
-		  TERMINAL_BUFFER_SIZE);
+     if(InParams == NULL || InParams[0] == '\0') {
+          return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     else if(ActiveConfiguration.KeyChangeAuth <= 0) {
           return COMMAND_ERR_AUTH_FAILED_ID;
      }
-     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
-     strcpy(InParamsCopy, InParams);
-     char *keyIdxParam = strtok(InParamsCopy, COMMAND_ARGSEP);
-     int keyIndex = 0;
-     if(keyIdxParam == NULL || ((keyIndex = atoi(keyIdxParam)) < 0) || (keyIndex >= NUM_KEYS_STORAGE)) { 
-          strncpy(OutMessage, PSTR("Missing or invalid KeyIndex parameter."), TERMINAL_BUFFER_SIZE);
-	  free(InParamsCopy);
-	  return COMMAND_ERR_INVALID_PARAM_ID;
+     size_t keyIndexStrLen = 0, pphStrLen = 0;
+     const char *pphStr = strchrnul(InParams, COMMAND_ARGSEP);
+     char *nullBytePos = strchrnul(++pphStr, COMMAND_ARGSEP);
+     if(*pphStr == '\0' || *nullBytePos != '\0' || nullBytePos == pphStr) {
+          strncpy_P(OutMessage, PSTR("Invalid number of parameters specified."), TERMINAL_BUFFER_SIZE);
+          return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     char *genPassphraseParam = strtok(NULL, COMMAND_ARGSEP);
-     if(genPassphraseParam == NULL) { 
-         strncpy(OutMessage, PSTR("Missing or invalid AuthPassphrase parameter."), TERMINAL_BUFFER_SIZE);
-	 free(InParamsCopy);
-	 return COMMAND_ERR_INVALID_PARAM_ID;
+     keyIndexStrLen = pphStr - InParams;
+     pphStrLen = nullBytePos - pphStr;
+     if(keyIndexStrLen == 0 || pphStrLen == 0 || (keyIndexStrLen + 1) > MAX_COMMAND_ARGLEN) {
+          return COMMAND_ERR_INVALID_USAGE_ID;
      }
-     uint8_t keyData[TERMINAL_BUFFER_SIZE];
-     if(!PassphraseToAESKeyData(keyIndex, genPassphraseParam)) {
-          return COMMAND_INFO_FALSE;
+     char keyIndexStr[MAX_COMMAND_ARGLEN];
+     strncpy(keyIndexStr, InParams, keyIndexStrLen);
+     keyIndexStr[keyIndexStrLen] = '\0';
+     int keyIndex = atoi(keyIndexStr);
+     if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE) {
+          strncpy_P(OutMessage, PSTR("Invalid key index specified."), TERMINAL_BUFFER_SIZE);
+	  return COMMAND_ERR_INVALID_USAGE_ID;
      }
-     BufferToHexString(OutMessage, TERMINAL_BUFFER_SIZE, 
-	               GlobalSettings.KeyData.keys[keyIndex], 
-		       GlobalSettings.KeyData.keyLengths[keyIndex]);
+     if(!PassphraseToAESKeyData(keyIndex, pphStr)) {
+          return COMMAND_INFO_FALSE_ID;
+     }
      ActiveConfiguration.KeyChangeAuth -= 1;
+     char keyData[MAX_COMMAND_ARGLEN];
+     BufferToHexString(keyData, MAX_COMMAND_ARGLEN, 
+		       GlobalSettings.KeyData.keys[keyIndex], 
+		       GlobalSettings.KeyData.keyLengths[keyIndex]);
+     strncpy(OutMessage, keyData, TERMINAL_BUFFER_SIZE);
      return COMMAND_INFO_OK_WITH_TEXT_ID;
 }
 
 #ifdef ENABLE_ADMIN_LEVEL_DEBUGGING
 CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParams) { 
-     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
-     strcpy(InParamsCopy, InParams);
-     char *keyIdxParam = strtok(InParamsCopy, COMMAND_ARGSEP);
-     int keyIndex = 0;
-     if(keyIdxParam == NULL || ((keyIndex = atoi(keyIdxParam)) < 0) || (keyIndex >= NUM_KEYS_STORAGE)) { 
-          strncpy(OutMessage, PSTR("Missing or invalid KeyIndex parameter."), TERMINAL_BUFFER_SIZE);
-	  free(InParamsCopy);
+     if(ActiveConfiguration.KeyChangeAuth <= 0) {
+          return COMMAND_ERR_AUTH_FAILED_ID;
+     }
+     char *nullBytePos = strchrnul(InParams, COMMAND_ARGSEP);
+     if(nullBytePos == NULL || nullBytePos == InParams) {
+          strncpy_P(OutMessage, PSTR("No key index parameter specified."), TERMINAL_BUFFER_SIZE);
 	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     char *authKeyParam = strtok(NULL, COMMAND_ARGSEP);
-     if(authKeyParam == NULL) { 
-         strncpy(OutMessage, PSTR("Missing or invalid AuthPassphrase parameter."), TERMINAL_BUFFER_SIZE);
-	 free(InParamsCopy);
-	 return COMMAND_ERR_INVALID_PARAM_ID;
+     else if(*nullBytePos == COMMAND_ARGSEP) {
+          strncpy_P(OutMessage, PSTR("Too many parameters specified."), TERMINAL_BUFFER_SIZE);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     else if(!AuthLockByPassphrase(authKeyParam)) { 
-          strncpy(OutMessage, PSTR("Incorrect authentication passphrase to view key specified."), 
-	          TERMINAL_BUFFER_SIZE);
-	  free(InParamsCopy);
-	  return COMMAND_ERR_AUTH_FAILED_ID;
+     int keyIndex = atoi(InParams);
+     if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE) {
+          strncpy_P(OutMessage, PSTR("Invalid key index specified."), TERMINAL_BUFFER_SIZE);
+	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     free(InParamsCopy);
-     InParamsCopy = NULL;
-     if(GlobalSettings.KeyData.keyLengths[keyIndex] > TERMINAL_BUFFER_SIZE) { 
-          strncpy(OutMessage, PSTR("Terminal buffer size is insufficient to display key data"), 
-	          TERMINAL_BUFFER_SIZE);
-	  return COMMAND_ERR_INVALID_USAGE_ID;
-     }
-     BufferToHexString(OutMessage, TERMINAL_BUFFER_SIZE, 
-	               GlobalSettings.KeyData.keys[keyIndex], 
+     ActiveConfiguration.KeyChangeAuth -= 1;
+     char keyData[MAX_COMMAND_ARGLEN];
+     BufferToHexString(keyData, MAX_COMMAND_ARGLEN, 
+		       GlobalSettings.KeyData.keys[keyIndex], 
 		       GlobalSettings.KeyData.keyLengths[keyIndex]);
+     strncpy(OutMessage, keyData, TERMINAL_BUFFER_SIZE);
      return COMMAND_INFO_OK_WITH_TEXT_ID;
 }
 #endif

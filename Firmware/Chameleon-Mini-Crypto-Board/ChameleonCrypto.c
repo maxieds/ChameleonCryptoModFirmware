@@ -96,21 +96,21 @@ bool PassphraseToAESKeyData(size_t keyIndex, const char *passphrase) {
      else if(keyIndex >= NUM_KEYS_STORAGE) { 
           return false;
      }
-     uint8_t pphBytes[MAX_KEY_LENGTH];
-     uint8_t pphByteCount = HexStringToBuffer(pphBytes, MAX_KEY_LENGTH, passphrase);
+     uint8_t *pphBytes = (uint8_t *) passphrase;
+     uint8_t pphByteCount = strlen(passphrase);
      SHAHash_t *hasherObj = GetNewHasherObject();
      uint8_t *firstRoundHashBytes = ComputeHashBytes(hasherObj, pphBytes, pphByteCount, 
 		                    pphBytes, pphByteCount);
      size_t frhbCount = GetHashByteCount(hasherObj);
      uint8_t *keyData = ComputeHashBytes(hasherObj, firstRoundHashBytes, 
-                                        frhbCount, pphBytes, pphByteCount);
+                                         frhbCount, pphBytes, pphByteCount);
      size_t keyDataSize = GetHashByteCount(hasherObj);
      ClearHashInitData(hasherObj);
      DeleteHasherObject(hasherObj);
      if(firstRoundHashBytes != NULL) {
           free(firstRoundHashBytes);
      }
-     bool setStatus = SetKeyData(keyIndex, keyData, keyDataSize);
+     bool setStatus = SetKeyData(keyIndex, keyData, MIN(keyDataSize, MAX_KEY_LENGTH));
      if(keyData != NULL) { 
           free(keyData);
      }

@@ -177,8 +177,8 @@ command line.
 ### Example
 
 ```
-KEYAUTH MyFlashLockPwd11:-) 10
-TODO
+keyauth MyFlashLockPwd11:-) 5
+100:OK
 ```
 
 ## New command: SETKEY 
@@ -205,7 +205,14 @@ indicating success or failure of the operation.
 ### Example
 
 ```
-ChameleonMiniSerialTerminal$ SETKEY 0 0000000000000000
+keyauth MyFlashLockPwd11:-) 10
+100:OK
+setkey 1 1234567890ABCDEF1234567890ABCDEF
+100:OK
+getkey 1
+101:OK WITH TEXT
+1234567890ABCDEF1234567890ABCDEF
+
 ```   
 
 ## New command: GENKEY
@@ -234,7 +241,12 @@ with text the hexadecimal string value of the key data just updated by the comma
 ### Example
 
 ```
-ChameleonMiniSerialTerminal$ GENKEY 2 MyNewKeyDataPassphrase0123*#$%^!
+genkey 2 ggggggggg
+101:OK WITH TEXT
+97BF8A1835734FBA87CA2643CB0F1C06
+getkey 2
+101:OK WITH TEXT
+97BF8A1835734FBA87CA2643CB0F1C06
 ```
 
 ## New command: GETKEY
@@ -262,8 +274,9 @@ key index to grok internally stored data from.
 ### Example
 
 ```
-GETKEY 0
-TODO
+getkey 2                          
+101:OK WITH TEXT 
+3070971AB7CE45063FD2573F49F5420D
 ```
 
 ## New command: UPLOAD_ENCRYPTED
@@ -286,10 +299,6 @@ ChameleonMiniSerialTerminal$ UPLOAD_ENCRYPTED KeyIdx KeyHexData TimestampSalt
 ### Example
 
 TODO 
-
-### Detailed example for testing in practice
-
-TODO
 
 ## New command: UPLOAD_STATUS
 

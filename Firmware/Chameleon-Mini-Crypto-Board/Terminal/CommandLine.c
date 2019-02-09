@@ -24,7 +24,7 @@
   ( ((c) >= 'A') && ((c) <= 'Z') ) || \
   ( ((c) >= 'a') && ((c) <= 'z') ) || \
   ( ((c) >= '0') && ((c) <= '9') ) || \
-  ( ((c) == '_') ) || \
+  ( ((c) == '_') ) || ispunct(c) || \
   ( ((c) == CHAR_GET_MODE) || ((c) == CHAR_SET_MODE) || ((c) == CHAR_EXEC_MODE_PARAM) ) \
 )
 
@@ -507,7 +507,7 @@ static void DecodeCommand(void)
     for (i = 0; i < ARRAY_COUNT(CommandTable); i++) {
       char *firstCmdWord = strchr(pTerminalBuffer, COMMAND_ARGSEP);
       size_t cmdBufferCheckLen = firstCmdWord ? firstCmdWord - pTerminalBuffer : MAX_COMMAND_ARGLEN;
-      if(cmdBufferCheckLen && !strncmp_P(pTerminalBuffer, CommandTable[i].Command, cmdBufferCheckLen)) {
+      if(cmdBufferCheckLen && !strncasecmp_P(pTerminalBuffer, CommandTable[i].Command, cmdBufferCheckLen)) {
         /* Command found. Clear buffer, and call appropriate function */
         char* pParam = ++pCommandDelimiter;
 
@@ -532,6 +532,7 @@ static void DecodeCommand(void)
     /* Send optional answer and/or status message */
     TerminalSendString(pTerminalBuffer);
     TerminalSendStringP(PSTR(OPTIONAL_ANSWER_TRAILER));
+    pTerminalBuffer[0] = '\0';
   }
 }
 
@@ -544,9 +545,9 @@ void CommandLineInit(void)
 bool CommandLineProcessByte(uint8_t Byte) {
     if (IS_CHARACTER(Byte)) {
         /* Store uppercase character */
-        if (IS_LOWERCASE(Byte)) {
-            Byte = TO_UPPERCASE(Byte);
-        }
+        //if (IS_LOWERCASE(Byte)) {
+        //    Byte = TO_UPPERCASE(Byte);
+        //}
 
         /* Prevent buffer overflow and account for '\0' */
         if (BufferIdx < TERMINAL_BUFFER_SIZE - 1) {
