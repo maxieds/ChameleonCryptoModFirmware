@@ -5,6 +5,8 @@
  *      Author: skuser
  */
 
+#include <ctype.h>
+
 #include "CommandLine.h"
 #include "Settings.h"
 #include "System.h"
@@ -425,13 +427,12 @@ static const char* GetStatusMessageP(CommandStatusIdType StatusId)
         if (pgm_read_byte(&StatusTable[i].Id) == StatusId)
             return StatusTable[i].Message;
     }
-
     return NULL;
 }
 
 static CommandStatusIdType CallCommandFunc(
     const CommandEntryType* CommandEntry, char CommandDelimiter, char* pParam) {
-  char* pTerminalBuffer = (char*) TerminalBuffer;
+  char *pTerminalBuffer = (char *) TerminalBuffer;
   CommandStatusIdType Status = COMMAND_ERR_INVALID_USAGE_ID;
 
     /* Call appropriate function depending on CommandDelimiter */
@@ -504,7 +505,9 @@ static void DecodeCommand(void)
 
     /* Search in command table */
     for (i = 0; i < ARRAY_COUNT(CommandTable); i++) {
-      if (strcmp_P(pTerminalBuffer, CommandTable[i].Command) == 0) {
+      char *firstCmdWord = strchr(pTerminalBuffer, COMMAND_ARGSEP);
+      size_t cmdBufferCheckLen = firstCmdWord ? firstCmdWord - pTerminalBuffer : MAX_COMMAND_ARGLEN;
+      if(cmdBufferCheckLen && !strncmp_P(pTerminalBuffer, CommandTable[i].Command, cmdBufferCheckLen)) {
         /* Command found. Clear buffer, and call appropriate function */
         char* pParam = ++pCommandDelimiter;
 
@@ -526,7 +529,7 @@ static void DecodeCommand(void)
   TerminalSendStringP(PSTR(STATUS_MESSAGE_TRAILER));
 
   if (CommandFound && (pTerminalBuffer[0] != '\0') ) {
-    /* Send optional answer */
+    /* Send optional answer and/or status message */
     TerminalSendString(pTerminalBuffer);
     TerminalSendStringP(PSTR(OPTIONAL_ANSWER_TRAILER));
   }
@@ -534,6 +537,7 @@ static void DecodeCommand(void)
 
 void CommandLineInit(void)
 {
+  memset(TerminalBuffer, (int) '\0', TERMINAL_BUFFER_SIZE);
   BufferIdx = 0;
 }
 
@@ -633,14 +637,16 @@ void CommandLineAppendData(void const * const Buffer, uint16_t Bytes)
     while (Bytes > (TERMINAL_BUFFER_SIZE / 2))
     {
         Bytes -= TERMINAL_BUFFER_SIZE / 2;
-        BufferToHexString(pTerminalBuffer, TERMINAL_BUFFER_SIZE, Buffer + i * TERMINAL_BUFFER_SIZE / 2, TERMINAL_BUFFER_SIZE);
+        BufferToHexString(pTerminalBuffer, TERMINAL_BUFFER_SIZE, 
+			  Buffer + i * TERMINAL_BUFFER_SIZE / 2, TERMINAL_BUFFER_SIZE);
         TerminalSendString(pTerminalBuffer);
         i++;
     }
 
     if (Bytes > 0)
     {
-        BufferToHexString(pTerminalBuffer, TERMINAL_BUFFER_SIZE, Buffer + i * TERMINAL_BUFFER_SIZE / 2, Bytes);
+        BufferToHexString(pTerminalBuffer, TERMINAL_BUFFER_SIZE, 
+			  Buffer + i * TERMINAL_BUFFER_SIZE / 2, Bytes);
         TerminalSendString(pTerminalBuffer);
     }
 

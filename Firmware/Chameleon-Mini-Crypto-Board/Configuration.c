@@ -14,7 +14,9 @@
 
 /* Map IDs to text */
 static const MapEntryType PROGMEM ConfigurationMap[] = {
+#ifdef CONFIG_NONE_SUPPORT
     { .Id = CONFIG_NONE, 			.Text = "NONE" },
+#endif
 #ifdef CONFIG_MF_ULTRALIGHT_SUPPORT
     { .Id = CONFIG_MF_ULTRALIGHT, 	.Text = "MF_ULTRALIGHT" },
     { .Id = CONFIG_MF_ULTRALIGHT_EV1_80B,   .Text = "MF_ULTRALIGHT_EV1_80B" },
@@ -56,6 +58,7 @@ static void ApplicationGetUidDummy(ConfigurationUidType Uid) { }
 static void ApplicationSetUidDummy(ConfigurationUidType Uid) { }
 
 static const PROGMEM ConfigurationType ConfigurationTable[] = {
+#ifdef CONFIG_NONE_SUPPORT
     [CONFIG_NONE] = 
     {
         CodecInitDummy,
@@ -73,6 +76,7 @@ static const PROGMEM ConfigurationType ConfigurationTable[] = {
         true, 
 	0
     },
+#endif
 #ifdef CONFIG_MF_ULTRALIGHT_SUPPORT
     [CONFIG_MF_ULTRALIGHT] =  
     {
@@ -256,7 +260,7 @@ ConfigurationType ActiveConfiguration;
 void ConfigurationInit(void)
 {
     memcpy_P(&ActiveConfiguration,
-            &ConfigurationTable[CONFIG_NONE], sizeof(ConfigurationType));
+            &ConfigurationTable[0], sizeof(ConfigurationType));
 
     ConfigurationSetById(GlobalSettings.ActiveSettingPtr->Configuration);
 }

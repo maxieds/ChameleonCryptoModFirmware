@@ -209,10 +209,10 @@ const USB_Descriptor_String_t PROGMEM LanguageString =
  */
 const USB_Descriptor_String_t PROGMEM ManufacturerString =
 {
-    .Header                 = {.Size = USB_STRING_LEN(15), 
+    .Header                 = {.Size = USB_STRING_LEN(55), 
 	                       .Type = DTYPE_String},
 
-    .UnicodeString          = L"ParkLand/SimonY"
+    .UnicodeString          = L"ParkLand/ToyFoundary/SimonY-MartinL -- Copyright \xA9 2019"
 
 };
 
@@ -222,16 +222,9 @@ const USB_Descriptor_String_t PROGMEM ManufacturerString =
  */
 const USB_Descriptor_String_t PROGMEM ProductString =
 {
-    .Header                 = {.Size = USB_STRING_LEN(14), .Type = DTYPE_String},
+    .Header                 = {.Size = USB_STRING_LEN(32), .Type = DTYPE_String},
 
-    .UnicodeString          = L"Chameleon-Mini"
-};
-
-const USB_Descriptor_String_t PROGMEM USBDefaultErrorString =
-{
-    .Header                 = {.Size = USB_STRING_LEN(110), .Type = DTYPE_String},
-
-    .UnicodeString          = L"NOF*IDEA!?"
+    .UnicodeString          = L"Chameleon-Mini (RevG CryptoMod)"
 };
 
 /** This function is called by the library when in device mode, and must be overridden (see library "USB Descriptors"
@@ -277,12 +270,6 @@ uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
                     break;
             }
             break;
-	default:
-	    fprintf(stderr, "ERROR: Unknown DescriptorType (%02x) ... Inventing some default to return\n", 
-			    DescriptorType);
-	    Address = (void *) &USBDefaultErrorString;
-	    Size    = pgm_read_byte(&USBDefaultErrorString.Header.Size);
-	    break;
     }
 
     *DescriptorAddress = Address;

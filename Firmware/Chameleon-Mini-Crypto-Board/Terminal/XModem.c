@@ -320,6 +320,7 @@ void XModemTick(void)
 	        IndicateCryptoUploadError();
 		XModemEncryptedUploadStatus = UPLOAD_STATUS_ERROR_ID;
 	    }
+	    CommandLinePendingTaskFinished(XModemEncryptedUploadStatus, NULL);
 	}
 	break;
 

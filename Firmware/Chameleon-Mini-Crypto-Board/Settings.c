@@ -84,10 +84,12 @@ void SettingsCycle(void) {
          * But only set if it is not CONFIG_NONE. */
         SettingIdx = (SettingIdx + 1) % SETTINGS_COUNT;
 
+        #ifdef CONFIG_NONE_SUPPORT
         if (GlobalSettings.Settings[SettingIdx].Configuration != CONFIG_NONE) {
             SettingsSetActiveById(INDEX_TO_SETTING(SettingIdx));
             break;
         }
+        #endif
     }
 }
 

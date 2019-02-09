@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include <avr/pgmspace.h>
+#include <avr/io.h>
 #include <Settings.h>
 
 #include "Commands.h"
@@ -712,30 +713,40 @@ CommandStatusIdType CommandExecClone(char *OutMessage)
 }
 
 CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InParams) { 
-     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
-     char *authPassphrase = strtok(InParamsCopy, COMMAND_ARGSEP);
-     if(authPassphrase == NULL) { 
-          strncpy(OutMessage, PSTR("Invalid or missing authentication passphrase string."), 
-		  TERMINAL_BUFFER_SIZE);
-	  free(InParamsCopy);
+     if(InParams == NULL || InParams[0] == '\0') {
+          strncpy_P(OutMessage, PSTR("No authentication passhrase specified."), TERMINAL_BUFFER_SIZE);
 	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     size_t numApprovedEdits = 0;
-     char *numAuthedEditsStr = strtok(InParamsCopy, COMMAND_ARGSEP);
+     size_t authPassphraseLen = 0, numApprovedEdits = 0;
+     const char *numAuthedEditsStr = strchr(InParams, COMMAND_ARGSEP);
+     char authPassphrase[MAX_COMMAND_ARGLEN + 1];
      if(numAuthedEditsStr == NULL) { 
+          authPassphraseLen = strchrnul(InParams, COMMAND_ARGSEP) - InParams;
+     }
+     else {
+          authPassphraseLen = numAuthedEditsStr - InParams;
+	  numAuthedEditsStr++;
+     }
+     strncpy(authPassphrase, InParams, authPassphraseLen + 1);
+     if(!AuthLockByPassphrase(authPassphrase)) { 
+          strncpy_P(OutMessage, PSTR("Incorrect authentication passphrase specified."), TERMINAL_BUFFER_SIZE);
+	  return COMMAND_ERR_AUTH_FAILED_ID;
+     }
+     else if(numAuthedEditsStr == NULL) {
           numApprovedEdits = 1;
      }
      else {
-          numApprovedEdits = atoi(numAuthedEditsStr);
-     }
-     if(!AuthLockByPassphrase(authPassphrase)) { 
-          strncpy(OutMessage, PSTR("Incorrect authentication passphrase specified."), TERMINAL_BUFFER_SIZE);
-	  free(InParamsCopy);
-	  return COMMAND_ERR_AUTH_FAILED_ID;
+          char *nextArgDelim = strchrnul(numAuthedEditsStr, COMMAND_ARGSEP);
+	  if(*nextArgDelim == '\0') {
+               numApprovedEdits = atoi(numAuthedEditsStr);
+	  }
+	  else {
+               strncpy_P(OutMessage, PSTR("Too many parameters specified."), TERMINAL_BUFFER_SIZE);
+	       return COMMAND_ERR_INVALID_PARAM_ID;      
+	  }
      }
      ActiveConfiguration.KeyChangeAuth = numApprovedEdits;
-     free(InParamsCopy);
-     return COMMAND_INFO_TRUE_ID;
+     return COMMAND_INFO_OK_ID;
 }
 
 CommandStatusIdType CommandExecParamSetKey(char *OutMessage, const char *InParams) { 
@@ -745,6 +756,7 @@ CommandStatusIdType CommandExecParamSetKey(char *OutMessage, const char *InParam
           return COMMAND_ERR_AUTH_FAILED_ID;
      }
      char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
+     strcpy(InParamsCopy, InParams);
      char *keyIdxParam = strtok(InParamsCopy, COMMAND_ARGSEP);
      int keyIndex = 0;
      if(keyIdxParam == NULL || ((keyIndex = atoi(keyIdxParam)) < 0) || (keyIndex >= NUM_KEYS_STORAGE)) { 
@@ -752,7 +764,7 @@ CommandStatusIdType CommandExecParamSetKey(char *OutMessage, const char *InParam
 	  free(InParamsCopy);
 	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     char *keyDataParam = strtok(InParamsCopy, COMMAND_ARGSEP);
+     char *keyDataParam = strtok(NULL, COMMAND_ARGSEP);
      if(keyDataParam == NULL) { 
          strncpy(OutMessage, PSTR("Missing or invalid KeyData parameter."), TERMINAL_BUFFER_SIZE);
 	 free(InParamsCopy);
@@ -773,6 +785,7 @@ CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParam
           return COMMAND_ERR_AUTH_FAILED_ID;
      }
      char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
+     strcpy(InParamsCopy, InParams);
      char *keyIdxParam = strtok(InParamsCopy, COMMAND_ARGSEP);
      int keyIndex = 0;
      if(keyIdxParam == NULL || ((keyIndex = atoi(keyIdxParam)) < 0) || (keyIndex >= NUM_KEYS_STORAGE)) { 
@@ -780,7 +793,7 @@ CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParam
 	  free(InParamsCopy);
 	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     char *genPassphraseParam = strtok(InParamsCopy, COMMAND_ARGSEP);
+     char *genPassphraseParam = strtok(NULL, COMMAND_ARGSEP);
      if(genPassphraseParam == NULL) { 
          strncpy(OutMessage, PSTR("Missing or invalid AuthPassphrase parameter."), TERMINAL_BUFFER_SIZE);
 	 free(InParamsCopy);
@@ -800,6 +813,7 @@ CommandStatusIdType CommandExecParamGenKey(char *OutMessage, const char *InParam
 #ifdef ENABLE_ADMIN_LEVEL_DEBUGGING
 CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParams) { 
      char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
+     strcpy(InParamsCopy, InParams);
      char *keyIdxParam = strtok(InParamsCopy, COMMAND_ARGSEP);
      int keyIndex = 0;
      if(keyIdxParam == NULL || ((keyIndex = atoi(keyIdxParam)) < 0) || (keyIndex >= NUM_KEYS_STORAGE)) { 
@@ -807,7 +821,7 @@ CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParam
 	  free(InParamsCopy);
 	  return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     char *authKeyParam = strtok(InParamsCopy, COMMAND_ARGSEP);
+     char *authKeyParam = strtok(NULL, COMMAND_ARGSEP);
      if(authKeyParam == NULL) { 
          strncpy(OutMessage, PSTR("Missing or invalid AuthPassphrase parameter."), TERMINAL_BUFFER_SIZE);
 	 free(InParamsCopy);
@@ -851,6 +865,7 @@ CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InPar
 
 CommandStatusIdType CommandExecParamUnlockChip(char *OutMessage, const char *InParam) { 
      char *InParamCopy = (char *) malloc((strlen(InParam) + 1) * sizeof(char));
+     strcpy(InParamCopy, InParam);
      char *authPwd = strtok(InParamCopy, COMMAND_ARGSEP);
      if(!AuthLockByPassphrase(authPwd)) { 
           strncpy(OutMessage, PSTR("Invalid flash password specified."), TERMINAL_BUFFER_SIZE);

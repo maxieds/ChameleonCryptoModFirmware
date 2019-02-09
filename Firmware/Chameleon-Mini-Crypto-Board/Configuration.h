@@ -20,8 +20,9 @@ typedef uint8_t ConfigurationUidType[CONFIGURATION_UID_SIZE_MAX];
 
 typedef enum  {
     /* This HAS to be the first element */
-    CONFIG_NONE = 0,
-
+#ifdef CONFIG_NONE_SUPPORT
+     CONFIG_NONE,
+#endif
 #ifdef CONFIG_MF_ULTRALIGHT_SUPPORT
     CONFIG_MF_ULTRALIGHT,
     CONFIG_MF_ULTRALIGHT_EV1_80B,

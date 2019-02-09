@@ -7,7 +7,7 @@
 
 #define MAX_COMMAND_LENGTH          32
 #define MAX_STATUS_LENGTH           128
-
+#define MAX_COMMAND_ARGLEN          32
 
 #define COMMAND_INFO_OK_ID              100
 #define COMMAND_INFO_OK                 "OK"
@@ -46,7 +46,7 @@
 #define COMMAND_CHAR_TRUE           '1'
 #define COMMAND_CHAR_FALSE          '0'
 #define COMMAND_CHAR_SUGGEST	    '?' /* <CMD>=? for help */
-#define COMMAND_ARGSEP              PSTR(" ")
+#define COMMAND_ARGSEP              ' '
 
 #define COMMAND_UID_BUFSIZE         32
 

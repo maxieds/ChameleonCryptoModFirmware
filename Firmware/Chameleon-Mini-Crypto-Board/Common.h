@@ -31,6 +31,8 @@
 #define SYSTICK_DIFF(since) ((uint16_t) (SystemGetSysTick() - since))
 #define SYSTICK_DIFF_100MS(since) (SYSTICK_DIFF(since) / 100)
 
+#define strlen_FW(str)     ((str == NULL) ? 0 : strchr(str, '\0') - str)
+
 #define BITS_PER_BYTE 8
 
 uint16_t BufferToHexString(char* HexOut, uint16_t MaxChars, const void* Buffer, uint16_t ByteCount);

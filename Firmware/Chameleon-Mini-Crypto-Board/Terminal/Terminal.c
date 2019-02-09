@@ -31,7 +31,7 @@ USB_ClassInfo_CDC_Device_t TerminalHandle = {
     }
 };
 
-uint8_t TerminalBuffer[TERMINAL_BUFFER_SIZE];
+uint8_t TerminalBuffer[TERMINAL_BUFFER_SIZE]; 
 TerminalStateEnum TerminalState = TERMINAL_UNINITIALIZED;
 static uint8_t TerminalInitDelay = INIT_DELAY;
 
@@ -46,19 +46,6 @@ void TerminalSendStringP(const char* s) {
         TerminalSendChar(c);
     }
 }
-
-/*
-void TerminalSendHex(void* Buffer, uint16_t ByteCount)
-{
-    char* pTerminalBuffer = (char*) TerminalBuffer;
-
-    BufferToHexString(pTerminalBuffer, sizeof(TerminalBuffer), Buffer, ByteCount);
-
-    TerminalSendString(pTerminalBuffer);
-}
-
-*/
-
 
 void TerminalSendBlock(const void* Buffer, uint16_t ByteCount)
 {
@@ -75,7 +62,8 @@ static void ProcessByte(void) {
 
         if (XModemProcessByte(Byte)) {
             /* XModem handled the byte */
-        } else if (CommandLineProcessByte(Byte)) {
+        } 
+	else if (CommandLineProcessByte(Byte)) {
             /* CommandLine handled the byte */
         }
     }
@@ -167,8 +155,8 @@ void EVENT_USB_Device_ConfigurationChanged(void)
 void EVENT_USB_Device_ControlRequest(void)
 {
     CDC_Device_ProcessControlRequest(&TerminalHandle);
-    TerminalBuffer[0] = '\0';
-    TerminalState = TERMINAL_INITIALIZED;
+    //TerminalBuffer[0] = '\0';
+    //TerminalState = TERMINAL_INITIALIZED;
 }
 
 
