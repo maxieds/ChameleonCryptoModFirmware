@@ -292,9 +292,12 @@ for testing purposes).
 ### Usage
 
 ```
-ChameleonMiniSerialTerminal$ UPLOAD_ENCRYPTED KeyIdx KeyHexData TimestampSalt
+UPLOAD_ENCRYPTED KeyIndex TimestampSaltAsciiString
 <User Initiates Upload of the Encrypted Dump via an XModem Commection from the Terminal>
 ```
+* *KeyIndex* : Index of the preloaded internally stored key to use for decryption; 
+* *TimestampSaltAsciiString* : Short-ish timestamp string to use as a "salted" initial vector for the 
+AES block cipher used for decryption.
 
 ### Example
 

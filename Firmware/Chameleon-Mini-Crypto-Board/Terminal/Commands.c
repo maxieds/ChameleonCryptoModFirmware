@@ -132,37 +132,27 @@ CommandStatusIdType CommandExecUpload(char* OutMessage)
     return COMMAND_INFO_XMODEM_WAIT_ID;
 }
 
-CommandStatusIdType CommandExecParamUploadEncrypted(char *outMessage, const char *InParams) { 
-		
-     const char *uploadEncSyntaxErrorMsg = PSTR("Syntax: UPLOAD_ENCRYPTED KeyIdx TimeStampSalt");
-     char *InParamsCopy = (char *) malloc((strlen(InParams) + 1) * sizeof(char));
-     strcpy(InParamsCopy, InParams);
-     char *keyIndex = strtok(InParamsCopy, COMMAND_ARGSEP);
-     if(keyIndex == NULL) {
-	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE); 
-          free(InParamsCopy);
-	  return COMMAND_ERR_INVALID_PARAM_ID;
+CommandStatusIdType CommandExecParamUploadEncrypted(char *OutMessage, const char *InParams) { 
+     if(InParams == NULL || *InParams == '\0') {
+          return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     char *timestampSalt = strtok(NULL, COMMAND_ARGSEP);
-     if(timestampSalt == NULL) {
-	  strncpy(outMessage, uploadEncSyntaxErrorMsg, TERMINAL_BUFFER_SIZE);
-          free(InParamsCopy);
-	  return COMMAND_ERR_INVALID_PARAM_ID;
+     char *saltStr = strchrnul(InParams, COMMAND_ARGSEP);
+     if(*saltStr == '\0' || *strchrnul(++saltStr, COMMAND_ARGSEP) != '\0') {
+          strncpy_P(OutMessage, PSTR("Invalid number of parameters specified."), TERMINAL_BUFFER_SIZE);
+          return COMMAND_ERR_INVALID_PARAM_ID;
      }
-     
-     size_t keyIndexNum = atoi(keyIndex);
-     if(keyIndexNum >= NUM_KEYS_STORAGE) {
-          snprintf_P(outMessage, TERMINAL_BUFFER_SIZE,
-                     PSTR("Key index #%d out of range. Try keys indexed 0-%d."), 
-	              keyIndexNum, NUM_KEYS_STORAGE - 1);
-          free(InParamsCopy);
-	  return COMMAND_ERR_INVALID_PARAM_ID;
+     size_t keyIndexStrLen = saltStr - InParams - 1;
+     char keyIndexStr[MAX_COMMAND_ARGLEN];
+     strncpy(keyIndexStr, InParams, keyIndexStrLen);
+     keyIndexStr[keyIndexStrLen] = '\0';
+     int keyIndex = atoi(keyIndexStr);
+     if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE) {
+          strncpy_P(OutMessage, PSTR("Invalid key index specified."), TERMINAL_BUFFER_SIZE);
+          return COMMAND_ERR_INVALID_USAGE_ID;
      }
-     size_t saltDataByteCount = 0;
-     uint8_t *LocalIVSaltData = GetKeyDataFromString(timestampSalt, &saltDataByteCount);
-     free(InParamsCopy);
-     XModemReceiveEncrypted(CryptoMemoryUploadBlock, keyIndexNum, 
-	                    LocalIVSaltData, saltDataByteCount);
+     size_t saltDataByteCount = strlen(saltStr);
+     XModemReceiveEncrypted(CryptoMemoryUploadBlock, keyIndex, 
+	                    (uint8_t *) saltStr, saltDataByteCount);
      return COMMAND_INFO_XMODEM_WAIT_ID;
 }
 

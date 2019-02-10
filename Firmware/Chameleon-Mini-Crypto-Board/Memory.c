@@ -433,11 +433,9 @@ bool CryptoMemoryUploadBlock(void *Buffer, uint32_t BlockAddress, uint16_t ByteC
         ByteCount = MIN(ByteCount, BytesLeft);
 
         /* Store to local encrypted dump crypto memory */
-	bool copyStatus = memcpy(CryptoUploadBuffer + BlockAddress, Buffer, ByteCount);
-        if(copyStatus) { 
-	     CryptoUploadBufferByteCount += ByteCount;
-	}
-        return copyStatus;
+	uint16_t copyBytes = WriteEEPBlock(CryptoUploadBuffer + BlockAddress, Buffer, ByteCount);
+	CryptoUploadBufferByteCount += copyBytes;
+        return copyBytes == ByteCount;
     }
 }
 

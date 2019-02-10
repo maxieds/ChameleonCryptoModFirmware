@@ -50,7 +50,6 @@ void InitCryptoDumpBuffer();
 bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength);
 
 /* Key management: */
-uint8_t * GetKeyDataFromString(const char *byteString, size_t *byteCount);
 bool SetKeyData(size_t keyIndex, uint8_t *keyData, size_t keyLength);
 bool ZeroFillKeyData(size_t keyIndex, size_t keyLength);
 bool GenKeyDataFromUSBSerialID(size_t keyIndex);

@@ -39,24 +39,6 @@ bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength) {
      return true;
 }
 
-uint8_t * GetKeyDataFromString(const char *byteString, size_t *byteBufLengthParam) { 
-     size_t byteBufLen = strlen(byteString) / 2;
-     if(byteBufLen == 0 || byteBufLengthParam == NULL) { 
-          return NULL;
-     }
-     else {
-          *byteBufLengthParam = byteBufLen;
-     }
-     uint8_t *byteBuf = (uint8_t *) malloc(byteBufLen * sizeof(uint8_t));
-     int fullKeyInt = atoi(byteString);
-     for(int b = 0; b < byteBufLen; b += 2) { 
-          int byteMask = 0xff << sizeof(uint8_t) * b;
-	  uint8_t curByte = (fullKeyInt & byteMask) >> (sizeof(uint8_t) * b);
-          byteBuf[b] = curByte;
-     }
-     return byteBuf;
-}
-
 bool SetKeyData(size_t keyIndex, uint8_t *keyData, size_t keyLength) { 
      if(keyIndex >= NUM_KEYS_STORAGE || !keyData || 
         keyLength <= 0 || keyLength > MAX_KEY_LENGTH) { 

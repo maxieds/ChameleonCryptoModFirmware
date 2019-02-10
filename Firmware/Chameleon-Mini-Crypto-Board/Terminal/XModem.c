@@ -5,6 +5,7 @@
 
 #include "XModem.h"
 #include "Terminal.h"
+#include "Commands.h"
 #include "../ChameleonCrypto.h"
 #include "../Settings.h"
 
@@ -50,7 +51,7 @@ static XModemCallbackType CallbackFunc;
 
 static bool DecryptDumpAfterUpload;
 static size_t LocalKeyIndex;
-static uint8_t *LocalIVSaltData;
+static uint8_t LocalIVSaltData[MAX_COMMAND_ARGLEN];
 static size_t LocalIVSaltDataByteCount;
 CommandStatusIdType XModemEncryptedUploadStatus = UPLOAD_STATUS_OK_ID;
 
@@ -83,8 +84,8 @@ void XModemReceiveEncrypted(XModemCallbackType TheCallbackFunc, size_t keyIndex,
     InitCryptoDumpBuffer();
     DecryptDumpAfterUpload = true;
     LocalKeyIndex = keyIndex;
-    LocalIVSaltData = ivSaltData;
-    LocalIVSaltDataByteCount = saltDataByteCount;
+    memcpy(LocalIVSaltData, ivSaltData, MIN(saltDataByteCount, MAX_COMMAND_ARGLEN));
+    LocalIVSaltDataByteCount = MIN(saltDataByteCount, MAX_COMMAND_ARGLEN);
     XModemEncryptedUploadStatus = UPLOAD_STATUS_PENDING_ID;
 }
 
@@ -310,7 +311,6 @@ void XModemTick(void)
 	    // cleanup data and free unused buffers:
 	    DecryptDumpAfterUpload = false;
 	    free(LocalIVSaltData);
-	    LocalIVSaltData = NULL;
             LocalIVSaltDataByteCount = 0;
 	    if(operationStatus) {
 	        IndicateCryptoUploadSuccess();

@@ -26,6 +26,9 @@ static const size_t BITS_PER_BYTE = 8;
 #define CRYPTO_UPLOAD_HEADER         ("MFCLASSIC1K-DMP")
 #define CRYPTO_UPLOAD_HEADER_SIZE    (15)
 
+#define MIN(x, y)                    ((x) >= (y) ? (y) : (x))
+
+
 typedef enum {
      OPERATION_ENCRYPT = 4, 
      OPERATION_DECRYPT,
@@ -63,8 +66,8 @@ class UtilityExecData_t {
      char keyDataStr[MAX_KEYDATA_BUFFER_SIZE];
      uint8_t keyDataBytes[MAX_KEYDATA_BUFFER_SIZE];
      size_t keyDataByteCount;
-     //uint8_t initVecData[MAX_KEYDATA_BUFFER_SIZE];
-     //size_t ivLength;
+     uint8_t saltDataBytes[MAX_BUFFER_SIZE];
+     size_t saltDataByteCount;
 
      /* Executive tracking of the program: */
      bool optionParsingError;
@@ -79,6 +82,8 @@ class UtilityExecData_t {
                            ctrModeCounterBytes(4), 
 			   blockCipherKeyBits(256), 
 			   blockCipherKeyBytes(256 / BITS_PER_BYTE), 
+			   saltDataBytes{0}, 
+			   saltDataByteCount(0), 
 			   keyDataStr(""), 
 			   keyDataBytes{0}, 
 			   keyDataByteCount(0), 
@@ -100,6 +105,7 @@ Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,
 void PrintUsage(const char *progName) { 
      fprintf(stderr, "Usage: %s [--encrypt|--decrypt]\n", progName);
      fprintf(stderr, "       --input-dump-image=<FilePath>\n");
+     fprintf(stderr, "       --timestamp-salt=<TimeStampAsciiString>\n");
      fprintf(stderr, "       [--output-dump-image=<FilePath>]\n");
      fprintf(stderr, "       [--key-data=<HexDataString=32HexChars>]\n\n");
 }
@@ -112,6 +118,7 @@ UtilityExecData_t ParseCommandLineData(int argc, char** &argv) {
 	  {"output-dump-image",  required_argument, NULL, 0}, 
 	  {"CTR-mode-size",      required_argument, NULL, 0}, 
 	  {"key-data",           required_argument, NULL, 0}, 
+	  {"timestamp-salt",     required_argument, NULL, 0}, 
 	  {NULL,                 0,                 NULL, 0}
      };
      int option_index = 0, optch;
@@ -155,6 +162,11 @@ UtilityExecData_t ParseCommandLineData(int argc, char** &argv) {
 	  }
 	  else if(!strcmp(long_options_spec[option_index].name, "CTR-mode-size")) { 
 	       runtimeDataOptions.ctrModeCounterBytes = atoi(optarg);
+	  }
+	  else if(!strcmp(long_options_spec[option_index].name, "timestamp-salt")) { 
+               size_t saltDataByteCount = MIN(MAX_BUFFER_SIZE, strlen(optarg));
+               memcpy(runtimeDataOptions.saltDataBytes, (uint8_t *) optarg, saltDataByteCount);
+	       runtimeDataOptions.saltDataByteCount = saltDataByteCount;
 	  }
 	  else if(!strcmp(long_options_spec[option_index].name, "key-data")) { 
                strncpy(runtimeDataOptions.keyDataStr, optarg, MAX_KEYDATA_BUFFER_SIZE);
@@ -209,11 +221,10 @@ int main(int argc, char **argv) {
 	       free(unencDataBuf);
 	       return 3;
 	  }
-	  uint8_t saltBuf[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xab,
-	                        0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
 	  Cipher_t cipherObj = PrepareBlockCipherObject(runtimeOptions.keyDataBytes, 
 		 	                                runtimeOptions.keyDataByteCount, 
-							saltBuf, 16);
+							runtimeOptions.saltDataBytes, 
+							runtimeOptions.saltDataByteCount);
 	  uint8_t *encDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
  	  memset(encDataBuf, 0xBA, sizeof(encDataBuf));
 	  if(cipherObj == NULL || encDataBuf == NULL || unencDataBuf == NULL) {
@@ -254,11 +265,10 @@ int main(int argc, char **argv) {
 	       free(encDataBuf);
 	       return 3;
 	  }
-	  uint8_t saltBuf[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xab,
-	                        0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f };
 	  Cipher_t cipherObj = PrepareBlockCipherObject(runtimeOptions.keyDataBytes, 
 		 	                                runtimeOptions.keyDataByteCount, 
-							saltBuf, 16);
+							runtimeOptions.saltDataBytes, 
+							runtimeOptions.saltDataByteCount);
 	  uint8_t *unencDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
 	  memcpy(unencDataBuf, encDataBuf, dataBufByteCount);
 	  if(!DecryptDataBuffer(cipherObj, unencDataBuf, encDataBuf, dataBufByteCount) || 
