@@ -141,7 +141,7 @@ bool XModemProcessByte(uint8_t Byte)
 
     case STATE_RECEIVE_DATA:
         /* Process byte and update checksum */
-        TerminalBuffer[BufferIdx++] = Byte;
+        TerminalBufferIn[BufferIdx++] = Byte;
 
         if (BufferIdx == XMODEM_BLOCK_SIZE) {
             /* Block full */
@@ -154,9 +154,9 @@ bool XModemProcessByte(uint8_t Byte)
         if (ReceivedFrameNumber == CurrentFrameNumber) {
             /* This is the expected frame. Calculate and verify checksum */
 
-            if (CalcChecksum(TerminalBuffer, XMODEM_BLOCK_SIZE) == Byte) {
+            if (CalcChecksum(TerminalBufferIn, XMODEM_BLOCK_SIZE) == Byte) {
                 /* Checksum is valid. Pass received data to callback function */
-                if (CallbackFunc(TerminalBuffer, BlockAddress, XMODEM_BLOCK_SIZE)) {
+                if (CallbackFunc(TerminalBufferIn, BlockAddress, XMODEM_BLOCK_SIZE)) {
                     /* Proceed to next frame and send ACK */
                     CurrentFrameNumber++;
                     BlockAddress += XMODEM_BLOCK_SIZE;
@@ -205,12 +205,12 @@ bool XModemProcessByte(uint8_t Byte)
             /* Acknowledge. Proceed to next frame, get data and calc checksum */
             CurrentFrameNumber++;
 
-            if (CallbackFunc(TerminalBuffer, BlockAddress, XMODEM_BLOCK_SIZE)) {
+            if (CallbackFunc(TerminalBufferIn, BlockAddress, XMODEM_BLOCK_SIZE)) {
                 TerminalSendByte(BYTE_SOH);
                 TerminalSendByte(CurrentFrameNumber);
                 TerminalSendByte(255 - CurrentFrameNumber);
-                TerminalSendBlock(TerminalBuffer, XMODEM_BLOCK_SIZE);
-                TerminalSendByte(CalcChecksum(TerminalBuffer, XMODEM_BLOCK_SIZE));
+                TerminalSendBlock(TerminalBufferIn, XMODEM_BLOCK_SIZE);
+                TerminalSendByte(CalcChecksum(TerminalBufferIn, XMODEM_BLOCK_SIZE));
 
                 BlockAddress += XMODEM_BLOCK_SIZE;
             } else {
@@ -222,8 +222,8 @@ bool XModemProcessByte(uint8_t Byte)
             TerminalSendByte(BYTE_SOH);
             TerminalSendByte(CurrentFrameNumber);
             TerminalSendByte(255 - CurrentFrameNumber);
-            TerminalSendBlock(TerminalBuffer, XMODEM_BLOCK_SIZE);
-            TerminalSendByte(CalcChecksum(TerminalBuffer, XMODEM_BLOCK_SIZE));
+            TerminalSendBlock(TerminalBufferIn, XMODEM_BLOCK_SIZE);
+            TerminalSendByte(CalcChecksum(TerminalBufferIn, XMODEM_BLOCK_SIZE));
         } else {
             /* Ignore other chars */
         }
@@ -283,7 +283,7 @@ void XModemTick(void)
 	        free(ptextBuf);
 		operationStatus = true;
 	    }
-	    else { // we need to try TIMESTAMP+/-1 to account for timing errors (Sigh...):
+	    /*else { // we need to try TIMESTAMP+/-1 to account for timing errors (Sigh...):
                 char  timeSinceEpochStr[TERMINAL_BUFFER_SIZE];
                 long int timeSinceEpoch = atol(timeSinceEpochStr);
 		int timingOffsets[] = { -1, 1 };
@@ -307,7 +307,7 @@ void XModemTick(void)
 			  break;
 		     }
 		}
-	    }
+	    }*/
 	    // cleanup data and free unused buffers:
 	    DecryptDumpAfterUpload = false;
 	    free(LocalIVSaltData);

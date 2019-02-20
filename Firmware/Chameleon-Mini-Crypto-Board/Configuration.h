@@ -20,9 +20,7 @@ typedef uint8_t ConfigurationUidType[CONFIGURATION_UID_SIZE_MAX];
 
 typedef enum  {
     /* This HAS to be the first element */
-#ifdef CONFIG_NONE_SUPPORT
-     CONFIG_NONE,
-#endif
+     CONFIG_NONE = 0,
 #ifdef CONFIG_MF_ULTRALIGHT_SUPPORT
     CONFIG_MF_ULTRALIGHT,
     CONFIG_MF_ULTRALIGHT_EV1_80B,
@@ -139,7 +137,7 @@ extern ConfigurationType ActiveConfiguration;
 
 void ConfigurationInit(void);
 void ConfigurationSetById(ConfigurationEnum Configuration);
-void ConfigurationGetByName(char* Configuration, uint16_t BufferSize);
+bool ConfigurationGetByName(char* Configuration, uint16_t BufferSize);
 bool ConfigurationSetByName(const char* Configuration);
 void ConfigurationGetList(char* ConfigurationList, uint16_t BufferSize);
 

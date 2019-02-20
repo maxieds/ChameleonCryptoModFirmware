@@ -14,7 +14,9 @@
 #define CHAR_GET_MODE   		'?'     /* <Command>? */
 #define CHAR_SET_MODE   		'='     /* <Command>=<Param> */
 #define CHAR_EXEC_MODE  		'\0'    /* <Command> */
-#define CHAR_EXEC_MODE_PARAM 	' '		/* <Command> <Param> ... <ParamN> */
+#define CHAR_EXEC_MODE_PARAM 	        ' '	/* <Command> <Param> ... <ParamN> */
+
+#define ESCAPE_CHAR                     0x1B
 
 #define IS_COMMAND_DELIMITER(c) ( \
   ((c) == CHAR_EXEC_MODE) || ((c) == CHAR_GET_MODE) || ((c) == CHAR_SET_MODE) || ((c) == CHAR_EXEC_MODE_PARAM) \
@@ -24,20 +26,20 @@
   ( ((c) >= 'A') && ((c) <= 'Z') ) || \
   ( ((c) >= 'a') && ((c) <= 'z') ) || \
   ( ((c) >= '0') && ((c) <= '9') ) || \
-  ( ((c) == '_') ) || ispunct(c) || \
+  ( ((c) == '_') ) || isgraph((c)) || \
   ( ((c) == CHAR_GET_MODE) || ((c) == CHAR_SET_MODE) || ((c) == CHAR_EXEC_MODE_PARAM) ) \
 )
 
 #define IS_LOWERCASE(c) ( ((c) >= 'a') && ((c) <= 'z') )
 #define TO_UPPERCASE(c) ( (c) - 'a' + 'A' )
 
-#define IS_WHITESPACE(c) ( ((c) == ' ') || ((c) == '\t') )
+#define IS_WHITESPACE(c) ( ((c) == ' ') || ((c) == '\t') || isspace((c)) )
 
-#define NO_FUNCTION          (NULL)
-#define NO_EXEC_FUNCTION     (NULL)
-#define NO_PARAM_FUNCTION    (NULL)
-#define NO_SET_FUNCTION      (NULL)
-#define NO_GET_FUNCTION      (NULL)
+#define NO_FUNCTION          ((void *) NULL)
+#define NO_EXEC_FUNCTION     ((void *) NULL)
+#define NO_PARAM_FUNCTION    ((void *) NULL)
+#define NO_SET_FUNCTION      ((void *) NULL)
+#define NO_GET_FUNCTION      ((void *) NULL)
 
 #define STATUS_MESSAGE_TRAILER    "\r\n"
 #define OPTIONAL_ANSWER_TRAILER    "\r\n"
@@ -432,7 +434,7 @@ static const char* GetStatusMessageP(CommandStatusIdType StatusId)
 
 static CommandStatusIdType CallCommandFunc(
     const CommandEntryType* CommandEntry, char CommandDelimiter, char* pParam) {
-  char *pTerminalBuffer = (char *) TerminalBuffer;
+  char *pTerminalBuffer = (char *) TerminalBufferOut;
   CommandStatusIdType Status = COMMAND_ERR_INVALID_USAGE_ID;
 
     /* Call appropriate function depending on CommandDelimiter */
@@ -489,7 +491,7 @@ static void DecodeCommand(void)
   uint8_t i;
   bool CommandFound = false;
   CommandStatusIdType StatusId = COMMAND_ERR_UNKNOWN_CMD_ID;
-  char* pTerminalBuffer = (char*) TerminalBuffer;
+  char* pTerminalBuffer = (char*) TerminalBufferIn;
 
   /* Do some sanity check first */
   if (!IS_COMMAND_DELIMITER(pTerminalBuffer[0])) {
@@ -505,14 +507,14 @@ static void DecodeCommand(void)
 
     /* Search in command table */
     for (i = 0; i < ARRAY_COUNT(CommandTable); i++) {
-      char *firstCmdWord = strchr(pTerminalBuffer, COMMAND_ARGSEP);
-      size_t cmdBufferCheckLen = firstCmdWord ? firstCmdWord - pTerminalBuffer : MAX_COMMAND_ARGLEN;
+      char *firstCmdWord = strchrnul(pTerminalBuffer, COMMAND_ARGSEP);
+      size_t cmdBufferCheckLen = firstCmdWord - pTerminalBuffer;
       if(cmdBufferCheckLen && !strncasecmp_P(pTerminalBuffer, CommandTable[i].Command, cmdBufferCheckLen)) {
         /* Command found. Clear buffer, and call appropriate function */
         char* pParam = ++pCommandDelimiter;
 
-        pTerminalBuffer[0] = '\0';
-        CommandFound = true;
+        TerminalBufferOut[0] = TerminalBufferIn[0] = '\0';
+	CommandFound = true;
 
         StatusId = CallCommandFunc(&CommandTable[i], CommandDelimiter, pParam);
 
@@ -528,17 +530,16 @@ static void DecodeCommand(void)
   TerminalSendStringP(GetStatusMessageP(StatusId));
   TerminalSendStringP(PSTR(STATUS_MESSAGE_TRAILER));
 
-  if (CommandFound && (pTerminalBuffer[0] != '\0') ) {
+  if (CommandFound && (TerminalBufferOut[0] != '\0') ) {
     /* Send optional answer and/or status message */
-    TerminalSendString(pTerminalBuffer);
+    TerminalSendString(TerminalBufferOut);
     TerminalSendStringP(PSTR(OPTIONAL_ANSWER_TRAILER));
-    pTerminalBuffer[0] = '\0';
   }
 }
 
 void CommandLineInit(void)
 {
-  memset(TerminalBuffer, (int) '\0', TERMINAL_BUFFER_SIZE);
+  TerminalBufferIn[0] = TerminalBufferOut[0] = '\0';
   BufferIdx = 0;
 }
 
@@ -551,11 +552,11 @@ bool CommandLineProcessByte(uint8_t Byte) {
 
         /* Prevent buffer overflow and account for '\0' */
         if (BufferIdx < TERMINAL_BUFFER_SIZE - 1) {
-            TerminalBuffer[BufferIdx++] = Byte;
+            TerminalBufferIn[BufferIdx++] = Byte;
         }
     } else if (Byte == '\r') {
         /* Process on \r. Terminate string and decode. */
-        TerminalBuffer[BufferIdx] = '\0';
+        TerminalBufferIn[BufferIdx] = '\0';
         BufferIdx = 0;
 
         if (!TaskPending)
@@ -565,7 +566,7 @@ bool CommandLineProcessByte(uint8_t Byte) {
         if (BufferIdx > 0) {
             BufferIdx--;
         }
-    } else if (Byte == 0x1B) {
+    } else if (Byte == ESCAPE_CHAR) {
         /* Drop buffer on escape */
         BufferIdx = 0;
     } else {
@@ -624,7 +625,7 @@ void CommandLinePendingTaskFinished(CommandStatusIdType ReturnStatusID, char con
 
 void CommandLineAppendData(void const * const Buffer, uint16_t Bytes)
 {
-    char* pTerminalBuffer = (char*) TerminalBuffer;
+    char* pTerminalBuffer = (char*) TerminalBufferIn;
 
     uint16_t tmpBytes = Bytes;
     if (Bytes > (TERMINAL_BUFFER_SIZE / 2))

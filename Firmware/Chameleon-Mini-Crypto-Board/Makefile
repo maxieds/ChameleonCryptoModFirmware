@@ -5,7 +5,7 @@
 SHELL = /bin/sh
 
 #Supported configurations
-#SETTINGS    += -DCONFIG_NONE_SUPPORT
+SETTINGS    += -DCONFIG_NONE_SUPPORT
 SETTINGS    += -DCONFIG_MF_CLASSIC_1K_SUPPORT
 SETTINGS    += -DCONFIG_MF_CLASSIC_1K_7B_SUPPORT
 SETTINGS    += -DCONFIG_MF_CLASSIC_4K_SUPPORT
@@ -24,10 +24,10 @@ SETTINGS	+= -DSUPPORT_UID7_FIX_MANUFACTURER_BYTE
 SETTINGS	+= -DSUPPORT_FIRMWARE_UPGRADE
 
 #Default configuration
+#SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_NONE
 SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_CLASSIC_1K
 #SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_CLASSIC_4K
 #SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_MF_ULTRALIGHT
-#SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_NONE
 #SETTINGS	+= -DDEFAULT_CONFIGURATION=CONFIG_ISO14443A_READER
 
 #Default button actions
@@ -75,11 +75,15 @@ SETTINGS        += -DBLOCK_CIPHER_TYPE_AES128
 #SETTINGS        += -DBLOCK_CIPHER_TYPE_AES256
 
 ## Specify the default passphrase needed to flash / lock / unlock the device:
-FLASH_LOCK_PASSPHRASE = $(shell ./BuildScripts/GetUserFlashPassword.sh | tail -n 1)
+FLASH_LOCK_PASSPHRASE := $(shell ./BuildScripts/GetUserFlashPassword.sh | tail -n 1)
+FLASH_LOCK_PASSPHRASE_HASH := $(shell echo $(FLASH_LOCK_PASSPHRASE) | sha256 -x -s $(FLASH_LOCK_PASSPHRASE) | tail -n 1)
+RANDOMIZED_AESKEY_DATA := "$(shell ./BuildScripts/GeneratePseudoRandomKeyBytes.sh 16)"
+
 SETTINGS        += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key storage data for debugging?
 SETTINGS        += -DREQUIRE_PASSPHRASE_TO_LOCK_CHIP=0 # Descriptively named setting ... 
 SETTINGS        += -DENABLE_CHIP_UNLOCKING=1 # Let users unlock the chip (with passphrase auth)? 
-SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"$(FLASH_LOCK_PASSPHRASE)\"
+SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"$(FLASH_LOCK_PASSPHRASE_HASH)\"
+SETTINGS        += -DPSEUDO_RANDOM_AESKEY_DATA=$(RANDOMIZED_AESKEY_DATA)
 SETTINGS        += -DPRIu16=\"PRIu16\"
 
 #Memory definitions and objcopy flags to include sections in binaries
@@ -139,7 +143,8 @@ AVRDUDE_WRITE_EEPROM_LATEST = -U eeprom:w:Latest/Chameleon-Mini.eep
 
 # Default target
 default: ChameleonCryptoUtils/UtilityBin/EncodeDump AESCryptoLib \
-	$(TARGET).hex $(TARGET).eep $(TARGET).bin $(TARGET).elf echo_flash_password
+	$(TARGET).hex $(TARGET).eep $(TARGET).bin $(TARGET).elf \
+	symbol-sizes size echo_custom_build_settings
 
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
@@ -197,8 +202,16 @@ ChameleonCryptoUtils/UtilityBin/EncodeDump:
 		-Wl,--start-group -Wl,--no-as-needed -std=c++11 -lstdc++ -frtti \
 		-L`readlink -f ../ArduinoCryptoLib` -lAESCryptoLinux
 
-echo_flash_password:
-	@echo -e "\n\nUSER-DEFINED FLASH ADMIN PASSPHRASE: " $(FLASH_LOCK_PASSPHRASE) "\n\n"
+echo_custom_build_settings:
+	@echo "\n\n==============================================================\
+		==================================\n\n"
+	@echo "USER-DEFINED FLASH ADMIN PASSPHRASE:  " $(FLASH_LOCK_PASSPHRASE)
+	@echo "FLASH ADMIN PASSPHRASE HASH (SHA256): " $(FLASH_LOCK_PASSPHRASE_HASH)
+	@echo "RANDOMIZED AES-128 (16-BYTE) KEYDATA: " \
+		$(shell echo $(RANDOMIZED_AESKEY_DATA) | sed 's/0x//g' | \
+		sed 's/[ \,\{\}]//g' | sed 's/^[^ ]*/\U&\E/') 
+	@echo "\n\n==============================================================\
+		=================================\n\n"
 
 ## Create a make target to copy the nicely packaged, newly built firmware to the stock
 ## Latest/* directory once we're happy that the testing code works well enough :) 

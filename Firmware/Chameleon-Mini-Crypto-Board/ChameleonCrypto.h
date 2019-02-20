@@ -63,8 +63,8 @@ Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,
 	                          const uint8_t *initVecData, size_t ivLength);
 Cipher_t PrepareBlockCipherObjectFromKeyIndex(size_t keyIndex, 
 	                                      const uint8_t *initVecData, size_t ivLength); 
-uint8_t * EncryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, size_t byteBufLen);
-uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, size_t byteBufLen);
+uint8_t * EncryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, uint16_t byteBufLen);
+uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, uint16_t byteBufLen);
 
 /* Physical indicators of success and/or errors by blinking LEDs on the board, or a permanent 
  * RED LED indicator. The new "UPLOAD_STATUS" command can be used to verify status of the uploading of 

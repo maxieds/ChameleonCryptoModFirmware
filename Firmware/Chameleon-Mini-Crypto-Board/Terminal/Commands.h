@@ -32,15 +32,15 @@
 #define TIMEOUT_COMMAND			255
 
 /* New command status for authentication errors: */
-#define COMMAND_ERR_AUTH_FAILED_ID      301
+#define COMMAND_ERR_AUTH_FAILED_ID      165
 #define COMMAND_ERR_AUTH_FAILED         "AUTHENTICATION FAILED"
 
 /* New command status markers for progress of (encrypted) upload operations: */
-#define UPLOAD_STATUS_OK_ID             400
+#define UPLOAD_STATUS_OK_ID             181
 #define UPLOAD_STATUS_OK                "UPLOAD OK"
-#define UPLOAD_STATUS_PENDING_ID        401
+#define UPLOAD_STATUS_PENDING_ID        182
 #define UPLOAD_STATUS_PENDING           "UPLOAD PENDING"
-#define UPLOAD_STATUS_ERROR_ID          402
+#define UPLOAD_STATUS_ERROR_ID          183
 #define UPLOAD_STATUS_ERROR             "UPLOAD ERROR"
 
 #define COMMAND_CHAR_TRUE           '1'

@@ -5,12 +5,11 @@ bool MapIdToText(const MapEntryType* MapPtr, uint8_t MapSize, MapIdType Id, char
     while (MapSize--) {
         if (pgm_read_byte(&MapPtr->Id) == Id) {
             strncpy_P(Text, MapPtr->Text, MaxBufferSize);
-            return true;
+            //strncpy_P(Text, PSTR("MapPtr->Text"), MaxBufferSize);
+	    return true;
         }
-
         MapPtr++;
     }
-
     return false;
 }
 

@@ -4,16 +4,16 @@
 #### Author: Maxie D. Schmidt (maxieds@gmail.com)
 #### Created: 02.02.2019
 
-DEFAULT_FLASH_LOCK_PWD="MyFlashLockPwd11\:-\)";
+DEFAULT_FLASH_LOCK_PWD="MyFlashLockPwd11";
 USER_RESPONSE_TIMEOUT_SECONDS=0;
-RANDOMIZE_DEFAULT_WITH_APG=0;
+RANDOMIZE_DEFAULT_WITH_APG=1;
 APGPasswordSuggestion="";
 
 if [[ "$RANDOMIZE_DEFAULT_WITH_APG" != "0" ]]; then
      APG=$(which apg);
      RandomSeed=`read -n 16 URSEED < /dev/urandom && echo $URSEED`;
      APGPasswordSuggestion=$($APG -n 1 -a 1 -M NCL -m 8 -x 12 -c $RandomSeed);
-     APGPasswordSuggestion="/"$APGPasswordSuggestion;
+     APGPasswordSuggestion="::"$APGPasswordSuggestion;
 fi
 
 echo -ne "Enter a backdoor administrator password for this build of the Chameleon Mini firmware ...\n";

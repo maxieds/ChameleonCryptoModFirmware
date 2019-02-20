@@ -259,8 +259,8 @@ symbol-sizes: $(TARGET).elf
 	@echo $(MSG_NM_CMD) Extracting \"$<\" symbols with decimal byte sizes
 	$(CROSS)-nm --size-sort --demangle --radix=d $<
 
-crefs: $(TARGET).elf
-	$(CROSS)-gcc -cref $<
+#crefs: $(TARGET).elf
+#	$(CROSS)-ld --cref $<
 
 # Cleans intermediary build files, leaving only the compiled application files
 mostlyclean:

@@ -130,13 +130,13 @@ Cipher_t PrepareBlockCipherObjectFromKeyIndex(size_t keyIndex,
 }
 
 uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, 
-		           size_t byteBufLen) { 
+		           uint16_t byteBufLen) { 
      if(byteBuf == NULL || byteBufLen <= 0) { 
           return NULL;
      }
      return NULL;
      uint8_t *plaintextBuf = (uint8_t *) malloc(byteBufLen * sizeof(uint8_t));
-     uint8_t byteBufLocalCopy[MAX_KEY_LENGTH];
+     uint8_t byteBufLocalCopy[byteBufLen];
      ReadEEPBlock((uint16_t) &byteBuf, byteBufLocalCopy, byteBufLen);
      if(!DecryptDataBuffer(cipherObj, plaintextBuf, byteBufLocalCopy, byteBufLen)) { 
           free(plaintextBuf);

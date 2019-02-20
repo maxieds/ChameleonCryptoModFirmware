@@ -296,7 +296,8 @@ UPLOAD_ENCRYPTED KeyIndex TimestampSaltAsciiString
 <User Initiates Upload of the Encrypted Dump via an XModem Commection from the Terminal>
 ```
 * *KeyIndex* : Index of the preloaded internally stored key to use for decryption; 
-* *TimestampSaltAsciiString* : Short-ish timestamp string to use as a "salted" initial vector for the 
+* *TimestampSaltAsciiString* : Short-ish (exactly 16-character) 
+timestamp string to use as a "salted" initial vector for the 
 AES block cipher used for decryption.
 
 ### Example
@@ -416,14 +417,17 @@ Let's work on the problem of generating the appropriate encrypted dump images fo
 Chameleon Mini **UPLOAD_ENCRYPTED** command. For example, observe:
 ```
 $ cd .. && make clean && make && cd ChameleonCryptoUtils
-$ UtilityBin/EncodeDump --encrypt --input-dump-image=MF1KDumpSamples/3E46-E4ED-516D.dmp --key-data=1234567890ABCDEF1234567890ABCDEF
-$ UtilityBin/EncodeDump --decrypt --input-dump-image=MF1KDumpSamples/3E46-E4ED-516D.edmp --key-data=1234567890ABCDEF1234567890ABCDEF
+$ UtilityBin/EncodeDump --encrypt --input-dump-image=MF1KDumpSamples/3E46-E4ED-516D.dmp --key-data=1234567890ABCDEF1234567890ABCDEF --timestamp-salt=MyTimestampSalt1
+Writing encrypted buffer to file @ "MF1KDumpSamples/3E46-E4ED-516D.edmp" ...
+DONE!
+$ UtilityBin/EncodeDump --decrypt --input-dump-image=MF1KDumpSamples/3E46-E4ED-516D.edmp --key-data=1234567890ABCDEF1234567890ABCDEF --timestamp-salt=MyTimestampSalt1
+DONE!
 $ diff MF1KDumpSamples/3E46-E4ED-516D.dmp MF1KDumpSamples/3E46-E4ED-516D.pdmp
 ```
 The source repository features the encrypted dumps resulting from running the encryption command above 
 on each of the three prepared sample dump files:
 ```
-$ ls MF1KDumpSamples/*.edmp
+$ ls MF2KDumpSamples/*.edmp
 MF1KDumpSamples/3E46-E4ED-516D.edmp  MF1KDumpSamples/8956-1972-D463.edmp
 MF1KDumpSamples/5076-4309-1469.edmp
 ```

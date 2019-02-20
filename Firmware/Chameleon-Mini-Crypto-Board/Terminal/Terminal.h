@@ -17,7 +17,7 @@
 #define TERMINAL_VBUS_PORT      PORTD
 #define TERMINAL_VBUS_MASK      PIN5_bm
 
-#define TERMINAL_BUFFER_SIZE	512
+#define TERMINAL_BUFFER_SIZE	256
 
 typedef enum {
     TERMINAL_UNINITIALIZED,
@@ -26,7 +26,8 @@ typedef enum {
     TERMINAL_UNITIALIZING
 } TerminalStateEnum;
 
-extern uint8_t TerminalBuffer[TERMINAL_BUFFER_SIZE];
+extern uint8_t TerminalBufferIn[TERMINAL_BUFFER_SIZE];
+extern uint8_t TerminalBufferOut[TERMINAL_BUFFER_SIZE];
 extern USB_ClassInfo_CDC_Device_t TerminalHandle;
 extern TerminalStateEnum TerminalState;
 

@@ -35,9 +35,12 @@ CommandStatusIdType CommandGetVersion(char* OutParam)
 
 CommandStatusIdType CommandGetConfig(char* OutParam)
 {
-  ConfigurationGetByName(OutParam, TERMINAL_BUFFER_SIZE);
-
-  return COMMAND_INFO_OK_WITH_TEXT_ID;
+  if(ConfigurationGetByName(OutParam, TERMINAL_BUFFER_SIZE)) {
+      return COMMAND_INFO_OK_WITH_TEXT_ID;
+  }
+  else {
+      return COMMAND_ERR_INVALID_USAGE_ID;
+  }
 }
 
 CommandStatusIdType CommandSetConfig(char* OutMessage, const char* InParam)
@@ -151,6 +154,8 @@ CommandStatusIdType CommandExecParamUploadEncrypted(char *OutMessage, const char
           return COMMAND_ERR_INVALID_USAGE_ID;
      }
      size_t saltDataByteCount = strlen(saltStr);
+     ConfigurationSetById(CONFIG_MF_CLASSIC_1K);
+     SETTING_UPDATE(GlobalSettings.ActiveSettingPtr->Configuration);
      XModemReceiveEncrypted(CryptoMemoryUploadBlock, keyIndex, 
 	                    (uint8_t *) saltStr, saltDataByteCount);
      return COMMAND_INFO_XMODEM_WAIT_ID;
