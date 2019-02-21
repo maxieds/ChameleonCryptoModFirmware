@@ -296,8 +296,6 @@ void XModemTick(void)
 	    else {
 	        IndicateCryptoUploadError();
 		XModemEncryptedUploadStatus = UPLOAD_STATUS_ERROR_ID;
-		if(!ValidDumpImageHeader(ptextBuf, CRYPTO_UPLOAD_HEADER_SIZE)) 
-			XModemEncryptedUploadStatus = COMMAND_INFO_OK_WITH_TEXT_ID;
 	    }
 	    DeleteCipherObject(decryptCipher);
 	}

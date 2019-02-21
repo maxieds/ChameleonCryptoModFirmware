@@ -22,26 +22,6 @@ void DeleteCipherObject(AESCipher_t *cipher) {
 	  delete cipher;
      }
 }
-/*AESCipher_t * CreateNewCipherObject() {
-     if(cipherObjectMutex) {
-          return NULL;
-     }
-     cipherObjectMutex = true;
-     AESCipher_t *cipherObjectPtr = reinterpret_cast<AESCipher_t *>(cipherObjectBytes);
-     cipherObjectPtr->clear();
-     return cipherObjectPtr;
-     //AESCipher_t *cipherObjPtr = (AESCipher_t *) malloc(sizeof(AES_CIPHERT_SIZE));
-     //memset(cipherObjPtr, 0, AES_CIPHERT_SIZE);
-     //return cipherObjPtr;
-}
-
-void DeleteCipherObject(AESCipher_t *cipher) {
-     if(cipher != NULL) {
-          cipher->clear();
-	  free(cipher);
-	  cipherObjectMutex = false;
-     }
-}*/
 
 void ClearCipherObject(AESCipher_t *cipher) {
      if(cipher != NULL) {

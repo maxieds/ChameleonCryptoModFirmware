@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
 	  return -2;
      }
      
-     fprintf(stderr, "sizeof(AESCipher_t) = %d\n", sizeof(AESCipher_t));
+     fprintf(stdout, "sizeof(AESCipher_t) = %d\n", sizeof(AESCipher_t));
      //int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
      //uint8_t *dataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
      //LoadFileIntoBuffer(runtimeOptions.inputDumpFilePath, dataBuf, dataBufByteCount);

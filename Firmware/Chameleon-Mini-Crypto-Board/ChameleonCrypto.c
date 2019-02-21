@@ -31,11 +31,11 @@ bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength) {
      if(!bufLength || bufLength < CRYPTO_UPLOAD_HEADER_SIZE || dumpDataBuf == NULL) { 
           return false;
      }
-     char dumpBytesHexStr[2 * bufLength + 1], headerStr[bufLength];
+     bufLength = CRYPTO_UPLOAD_HEADER_SIZE;
+     char dumpBytesHexStr[2 * bufLength + 1], headerHexStr[2 * bufLength + 1];
      BufferToHexString(dumpBytesHexStr, 2 * bufLength + 1, dumpDataBuf, bufLength);
-     strncpy_P(headerStr, PSTR(CRYPTO_UPLOAD_HEADER), bufLength);
-     if(!strncmp_P(dumpBytesHexStr, PSTR(CRYPTO_UPLOAD_HEADER), bufLength - 1) && 
-	dumpDataBuf[bufLength - 1] == (uint8_t) headerStr[bufLength - 1]) { 
+     BufferToHexString(headerHexStr, 2 * bufLength + 1, CRYPTO_UPLOAD_HEADER, bufLength);
+     if(!strncmp(dumpBytesHexStr, headerHexStr, bufLength)) { 
           return true;
      }
      return false;

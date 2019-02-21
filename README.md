@@ -302,7 +302,18 @@ AES block cipher used for decryption.
 
 ### Example
 
-TODO 
+```
+$ cd ./Firmware/Chameleon-Mini-Crypto-Board
+$ ./HelperScripts/ChameleonUploadEncrypted.sh 1 MyTimestampSalt1 ChameleonCryptoUtils/MF1KDumpSamples/8956-1972-D463.edmp --reset
+$ minicom chameleoncb
+> upload_status
+181:UPLOAD OK
+> uid?
+F6B48DD6
+> config?
+MF_CLASSIC_1K
+# <CTRL+A> then 'q' to exit
+```
 
 ## New command: UPLOAD_STATUS
 
@@ -322,9 +333,7 @@ UPLOAD_STATUS
 
 ```
 UPLOAD_STATUS
-TODO
-TODO
-TODO
+181:UPLOAD OK
 ```
 
 ## New command: LOCK_CHIP
@@ -417,12 +426,13 @@ Let's work on the problem of generating the appropriate encrypted dump images fo
 Chameleon Mini **UPLOAD_ENCRYPTED** command. For example, observe:
 ```
 $ cd .. && make clean && make && cd ChameleonCryptoUtils
-$ UtilityBin/EncodeDump --encrypt --input-dump-image=MF1KDumpSamples/3E46-E4ED-516D.dmp --key-data=1234567890ABCDEF1234567890ABCDEF --timestamp-salt=MyTimestampSalt1
-Writing encrypted buffer to file @ "MF1KDumpSamples/3E46-E4ED-516D.edmp" ...
-DONE!
-$ UtilityBin/EncodeDump --decrypt --input-dump-image=MF1KDumpSamples/3E46-E4ED-516D.edmp --key-data=1234567890ABCDEF1234567890ABCDEF --timestamp-salt=MyTimestampSalt1
-DONE!
-$ diff MF1KDumpSamples/3E46-E4ED-516D.dmp MF1KDumpSamples/3E46-E4ED-516D.pdmp
+$ ../HelperScripts/PrepareEncryptedDumpImage.sh MF1KDumpSamples/5076-4309-1469.dmp 1234567890ABCDEF1234567890ABDCEF MyTimestampSalt1
+ >> Removing previous files ...
+ >> Creating dump data file "ChameleonCryptoUtils/MF1KDumpSamples/5076-4309-1469.dmp" ...
+ >> Prepending crypto header string "MFCLASSIC1K-DMP" ...
+ >> Extending dump data file from 1187 to 1280 bytes ...
+ >> Sanity check on the encryption / decryption routine: OK! ... 
+ >> Terminating the utility for good!
 ```
 The source repository features the encrypted dumps resulting from running the encryption command above 
 on each of the three prepared sample dump files:
