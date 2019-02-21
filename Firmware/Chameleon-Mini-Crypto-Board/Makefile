@@ -76,14 +76,18 @@ SETTINGS        += -DBLOCK_CIPHER_TYPE_AES128
 
 ## Specify the default passphrase needed to flash / lock / unlock the device:
 FLASH_LOCK_PASSPHRASE := $(shell ./BuildScripts/GetUserFlashPassword.sh | tail -n 1)
-FLASH_LOCK_PASSPHRASE_HASH := $(shell echo $(FLASH_LOCK_PASSPHRASE) | sha256 -x -s $(FLASH_LOCK_PASSPHRASE) | tail -n 1)
+FLASH_LOCK_PASSPHRASE_HASH := $(shell echo -n $(FLASH_LOCK_PASSPHRASE) | sha256 | xxd -p -u | tr "\n" "%" | sed 's/%//g')
 RANDOMIZED_AESKEY_DATA := "$(shell ./BuildScripts/GeneratePseudoRandomKeyBytes.sh 16)"
+CRYPTO_DUMP_HEADER := $(shell cat ./BuildScripts/DumpImageCryptoHeader.dat)
+CRYPTO_DUMP_HEADER_BYTES := $(shell cat ./BuildScripts/DumpImageCryptoHeader.dat | wc -c)
 
 SETTINGS        += -DENABLE_ADMIN_LEVEL_DEBUGGING # Let firmware users print key storage data for debugging?
 SETTINGS        += -DREQUIRE_PASSPHRASE_TO_LOCK_CHIP=0 # Descriptively named setting ... 
 SETTINGS        += -DENABLE_CHIP_UNLOCKING=1 # Let users unlock the chip (with passphrase auth)? 
 SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"$(FLASH_LOCK_PASSPHRASE_HASH)\"
 SETTINGS        += -DPSEUDO_RANDOM_AESKEY_DATA=$(RANDOMIZED_AESKEY_DATA)
+SETTINGS        += -DCRYPTO_DUMP_HEADER_STRING=\"$(CRYPTO_DUMP_HEADER)$(shell echo -en '\x0a')\"
+SETTINGS        += -DCRYPTO_DUMP_HEADER_BYTES=$(CRYPTO_DUMP_HEADER_BYTES)
 SETTINGS        += -DPRIu16=\"PRIu16\"
 
 #Memory definitions and objcopy flags to include sections in binaries
@@ -122,7 +126,7 @@ CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -DFLASH_DATA_ADDR=$(FLASH_DATA_ADDR) -DF
 		-DCHAMELEON_REVSTR=\"REV:$(COMMIT_ID)@TIME:$(BUILD_DATE)\" $(SETTINGS) \
 		-IArduinoCryptoLib 
 LD_FLAGS     = -Wl,-u,vfprintf -lprintf_flt -lm -Wl,--start-group -Wl,--as-needed \
-	       -Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) \
+		-Wl,--section-start=.flashdata=$(FLASH_DATA_ADDR) \
 		-Wl,--section-start=.spmhelper=$(SPM_HELPER_ADDR) \
 		-LArduinoCryptoLib -lAESCrypto
 OBJDIR       = Bin
@@ -209,7 +213,8 @@ echo_custom_build_settings:
 	@echo "FLASH ADMIN PASSPHRASE HASH (SHA256): " $(FLASH_LOCK_PASSPHRASE_HASH)
 	@echo "RANDOMIZED AES-128 (16-BYTE) KEYDATA: " \
 		$(shell echo $(RANDOMIZED_AESKEY_DATA) | sed 's/0x//g' | \
-		sed 's/[ \,\{\}]//g' | sed 's/^[^ ]*/\U&\E/') 
+		sed 's/[ \,\{\}]//g' | sed 's/^[^ ]*/\U&\E/') "\n"
+	@echo "ENC HEADER (#$(CRYPTO_DUMP_HEADER_BYTES)) BYTES:  \n"`echo -en $(CRYPTO_DUMP_HEADER) | xxd`
 	@echo "\n\n==============================================================\
 		=================================\n\n"
 

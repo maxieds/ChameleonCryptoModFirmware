@@ -7,7 +7,7 @@ LD=avr-g++
 CXX=avr-g++
 HOSTARCH_FLAGS=-mmcu=avrxmega7 -D__AVR_ATxmega128A4U__ -DHOST_BUILD -DNEED_LIBSTDCPP\
 	       -D__cplusplus
-CPPFLAGS = -Wl,--export-dynamic -fPIC -O0 -Wl,--as-needed -I$(shell readlink -f .)
+CPPFLAGS = -Wl,--export-dynamic -O0 -Wl,--as-needed -I$(shell readlink -f .)
 CXXFLAGS = -g -Wall $(CPPFLAGS) $(HOSTARCH_FLAGS)
 
 SOURCES = \

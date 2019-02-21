@@ -38,8 +38,8 @@ public:
     virtual bool setKey(const uint8_t *key, size_t len) = 0;
     virtual bool setIV(const uint8_t *iv, size_t len) = 0;
 
-    virtual void encrypt(uint8_t *output, const uint8_t *input, size_t len) = 0;
-    virtual void decrypt(uint8_t *output, const uint8_t *input, size_t len) = 0;
+    virtual void encrypt(uint8_t *output, const uint8_t *input, uint16_t len) = 0;
+    virtual void decrypt(uint8_t *output, const uint8_t *input, uint16_t len) = 0;
 
     virtual void clear() = 0;
 };

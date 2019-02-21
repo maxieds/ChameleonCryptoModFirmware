@@ -41,9 +41,6 @@
 #define NO_SET_FUNCTION      ((void *) NULL)
 #define NO_GET_FUNCTION      ((void *) NULL)
 
-#define STATUS_MESSAGE_TRAILER    "\r\n"
-#define OPTIONAL_ANSWER_TRAILER    "\r\n"
-
 /* Include all command functions */
 #include "Commands.h"
 
@@ -421,7 +418,7 @@ void (*CommandLinePendingTaskTimeout) (void) = NO_FUNCTION; // gets called on Ti
 static bool TaskPending = false;
 static uint16_t TaskPendingSince;
 
-static const char* GetStatusMessageP(CommandStatusIdType StatusId)
+const char* GetStatusMessageP(CommandStatusIdType StatusId)
 {
     uint8_t i;
 

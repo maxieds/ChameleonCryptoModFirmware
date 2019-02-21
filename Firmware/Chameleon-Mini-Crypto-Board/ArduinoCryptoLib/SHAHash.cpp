@@ -17,15 +17,28 @@ void DeleteHasherObject(SHAHash_t *hasherObj) {
      }
 }
 
-uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *saltData, size_t saltBytesLen, 
+uint8_t * ComputeHashBytesWithHMAC(SHAHash_t *hasherObj, const uint8_t *saltData, size_t saltBytesLen, 
 		           const uint8_t *dataBytes, size_t dataByteCount) {
      if(hasherObj == NULL || saltData == NULL || dataBytes == NULL) {
           return NULL;
      }
      hasherObj->resetHMAC(saltData, saltBytesLen);
      hasherObj->update(dataBytes, dataByteCount);
-     uint8_t *hashData = (uint8_t *) malloc(256 * sizeof(uint8_t));
-     hasherObj->finalizeHMAC(saltData, saltBytesLen, hashData, 256);
+     uint16_t hashDataSize = GetHashByteCount(hasherObj);
+     uint8_t *hashData = (uint8_t *) malloc(hashDataSize * sizeof(uint8_t));
+     hasherObj->finalizeHMAC(saltData, saltBytesLen, hashData, hashDataSize);
+     return hashData;
+}
+
+uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *dataBytes, size_t dataByteCount) {
+     if(hasherObj == NULL || dataBytes == NULL) {
+          return NULL;
+     }
+     hasherObj->reset();
+     hasherObj->update(dataBytes, dataByteCount);
+     uint16_t hashDataSize = GetHashByteCount(hasherObj);
+     uint8_t *hashData = (uint8_t *) malloc(hashDataSize * sizeof(uint8_t));
+     hasherObj->finalize(hashData, hashDataSize);
      return hashData;
 }
 

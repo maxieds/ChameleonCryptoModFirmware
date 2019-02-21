@@ -10,6 +10,7 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -17,27 +18,15 @@ extern "C" {
 
 #include "AESCipherType.h"
 
-#define AES_CIPHERT_SIZE       (240)
-
-inline AESCipher_t * CreateNewCipherObject() {
-     AESCipher_t *cipherObjPtr = (AESCipher_t *) malloc(sizeof(AES_CIPHERT_SIZE));
-     memset(cipherObjPtr, 0, AES_CIPHERT_SIZE);
-     return cipherObjPtr;
-}
-
-inline void DeleteCipherObject(AESCipher_t *cipher) {
-     if(cipher != NULL) {
-          free(cipher);
-     }
-}
-
+AESCipher_t * CreateNewCipherObject();
+void DeleteCipherObject(AESCipher_t *cipher);
 void ClearCipherObject(AESCipher_t *cipher);
 bool SetCipherKey(AESCipher_t *cipher, const uint8_t *keyData, size_t keyLength);
 bool SetCipherSalt(AESCipher_t *cipher, const uint8_t *saltData, size_t saltByteCount);
 bool EncryptDataBuffer(AESCipher_t *cipher, uint8_t *encryptedDataBuf, 
 		       const uint8_t *ptextDataBuf, size_t dataBufByteCount);
 bool DecryptDataBuffer(AESCipher_t *cipher, uint8_t *ptextDataBuf, 
-		       const uint8_t *encDataBuf, size_t dataBufByteCount);
+		       uint8_t *encDataBuf, size_t dataBufByteCount);
 
 #ifdef __cplusplus
 }

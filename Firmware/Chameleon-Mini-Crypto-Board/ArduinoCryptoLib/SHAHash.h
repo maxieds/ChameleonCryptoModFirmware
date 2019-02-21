@@ -18,8 +18,9 @@ typedef struct SHA256 SHAHash_t;
 
 SHAHash_t * GetNewHasherObject();
 void DeleteHasherObject(SHAHash_t *hasherObj);
-uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *saltData, size_t saltBytesLength, 
-		           const uint8_t *dataBytes, size_t dataByteCount);
+uint8_t * ComputeHashBytesWithHMAC(SHAHash_t *hasherObj, const uint8_t *saltData, size_t saltBytesLength, 
+		                   const uint8_t *dataBytes, size_t dataByteCount);
+uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *dataBytes, size_t dataByteCount);
 size_t GetHashByteCount(SHAHash_t *hasherObj);
 void ClearHashInitData(SHAHash_t *hasherObj);
 

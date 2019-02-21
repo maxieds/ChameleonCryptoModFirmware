@@ -424,18 +424,20 @@ bool MemoryUploadBlock(void* Buffer, uint32_t BlockAddress, uint16_t ByteCount)
 
 bool CryptoMemoryUploadBlock(void *Buffer, uint32_t BlockAddress, uint16_t ByteCount)
 {
-    if (BlockAddress >= MEMORY_SIZE_PER_SETTING) {
+    if (BlockAddress >= CRYPTO_UPLOAD_BUFSIZE) {
         /* Prevent writing out of bounds by silently ignoring it */
-        return true;
+        return false;
     } else {
         /* Calculate bytes left in memory and start writing */
-        uint32_t BytesLeft = MEMORY_SIZE_PER_SETTING - BlockAddress;
+        uint32_t BytesLeft = CRYPTO_UPLOAD_BUFSIZE - BlockAddress;
         ByteCount = MIN(ByteCount, BytesLeft);
 
         /* Store to local encrypted dump crypto memory */
-	uint16_t copyBytes = WriteEEPBlock(CryptoUploadBuffer + BlockAddress, Buffer, ByteCount);
-	CryptoUploadBufferByteCount += copyBytes;
-        return copyBytes == ByteCount;
+	//uint16_t copyBytes = WriteEEPBlock((uint16_t) &(CryptoUploadBuffer[BlockAddress]), 
+	//		                   Buffer, ByteCount);
+	memcpy(CryptoUploadBuffer + BlockAddress, Buffer, ByteCount);
+	CryptoUploadBufferByteCount += ByteCount;
+        return true;
     }
 }
 

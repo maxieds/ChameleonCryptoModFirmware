@@ -3,7 +3,7 @@
 
 #include <avr/pgmspace.h>
 #include <avr/io.h>
-#include <Settings.h>
+//#include <Settings.h>
 
 #include "Commands.h"
 #include "XModem.h"
@@ -166,6 +166,9 @@ CommandStatusIdType CommandExecUploadStatus(char *OutMessage) {
      if(uploadStatus == UPLOAD_STATUS_ERROR_ID) { // reset to OK after checking this:
           XModemEncryptedUploadStatus = UPLOAD_STATUS_OK_ID;
      }
+     char hexStr[65];
+     BufferToHexString(hexStr, 65, CryptoUploadBuffer, 64);
+     snprintf(OutMessage, TERMINAL_BUFFER_SIZE, "%d&&%s", (int) CryptoUploadBufferByteCount, hexStr);
      return uploadStatus;
 }
 
@@ -847,7 +850,7 @@ CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InPar
      if(REQUIRE_PASSPHRASE_TO_LOCK_CHIP) { 
           char *InParamCopy = (char *) malloc((strlen(InParam) + 1) * sizeof(char));
 	  strcpy(InParamCopy, InParam);
-	  char *authPwd = strtok(InParamCopy, COMMAND_ARGSEP);
+	  char *authPwd = strchr(InParamCopy, COMMAND_ARGSEP);
           if(!AuthLockByPassphrase(authPwd)) { 
                strncpy(OutMessage, PSTR("Invalid flash password specified."), TERMINAL_BUFFER_SIZE);
 	       free(InParamCopy);
@@ -862,7 +865,7 @@ CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InPar
 CommandStatusIdType CommandExecParamUnlockChip(char *OutMessage, const char *InParam) { 
      char *InParamCopy = (char *) malloc((strlen(InParam) + 1) * sizeof(char));
      strcpy(InParamCopy, InParam);
-     char *authPwd = strtok(InParamCopy, COMMAND_ARGSEP);
+     char *authPwd = strchr(InParamCopy, COMMAND_ARGSEP);
      if(!AuthLockByPassphrase(authPwd)) { 
           strncpy(OutMessage, PSTR("Invalid flash password specified."), TERMINAL_BUFFER_SIZE);
 	  free(InParamCopy);

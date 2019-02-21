@@ -6,6 +6,7 @@
 #include "XModem.h"
 #include "Terminal.h"
 #include "Commands.h"
+#include "CommandLine.h"
 #include "../ChameleonCrypto.h"
 #include "../Settings.h"
 
@@ -75,6 +76,7 @@ void XModemReceive(XModemCallbackType TheCallbackFunc)
     BlockAddress = 0;
     CallbackFunc = TheCallbackFunc;
     DecryptDumpAfterUpload = false;
+    XModemEncryptedUploadStatus = UPLOAD_STATUS_OK_ID;
 }
 
 void XModemReceiveEncrypted(XModemCallbackType TheCallbackFunc, size_t keyIndex, 
@@ -231,7 +233,7 @@ bool XModemProcessByte(uint8_t Byte)
         break;
 
     case STATE_SEND_EOT:
-        /* Receive Ack */
+	/* Receive Ack */
         State = STATE_OFF;
         break;
 
@@ -273,44 +275,19 @@ void XModemTick(void)
 	    bool operationStatus = false;
             // create the block cipher, decrypt to plaintext, and then upload into memory: 
 	    Cipher_t decryptCipher = PrepareBlockCipherObjectFromKeyIndex(
-		LocalKeyIndex, LocalIVSaltData, MIN(AES_IV_SIZE, LocalIVSaltDataByteCount)
+		LocalKeyIndex, LocalIVSaltData, LocalIVSaltDataByteCount
 	    );
-	    uint8_t *ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
-		      	                         CryptoUploadBufferByteCount);
-	    if(ptextBuf != NULL && ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 
-	        MemoryUploadBlock((void *) (ptextBuf + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
+	    uint8_t *ptextBuf = DecryptDumpImage(decryptCipher, 
+	    		                         LocalIVSaltData, LocalIVSaltDataByteCount, 
+	    				         CryptoUploadBuffer, CryptoUploadBufferByteCount);
+	    if(ptextBuf != NULL && CryptoUploadBufferByteCount >= CRYPTO_UPLOAD_HEADER_SIZE && 
+	       ValidDumpImageHeader(ptextBuf, CRYPTO_UPLOAD_HEADER_SIZE)) { 
+		MemoryUploadBlock((void *) (ptextBuf + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
 				  CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
-	        free(ptextBuf);
 		operationStatus = true;
 	    }
-	    /*else { // we need to try TIMESTAMP+/-1 to account for timing errors (Sigh...):
-                char  timeSinceEpochStr[TERMINAL_BUFFER_SIZE];
-                long int timeSinceEpoch = atol(timeSinceEpochStr);
-		int timingOffsets[] = { -1, 1 };
-		for(int toff = 0; toff < 2; toff++) { 
-                     long int nextTimeSinceEpoch = timeSinceEpoch + timingOffsets[toff];
-		     char nextTimeStr[TERMINAL_BUFFER_SIZE];
-		     snprintf(nextTimeStr, TERMINAL_BUFFER_SIZE, PSTR("%lx\0"), nextTimeSinceEpoch);
-		     uint8_t nextTimeBytes[TERMINAL_BUFFER_SIZE];
-		     size_t nextTimeByteCount = HexStringToBuffer(nextTimeBytes, TERMINAL_BUFFER_SIZE, 
-				                                  nextTimeStr);
-		     decryptCipher = PrepareBlockCipherObjectFromKeyIndex(
-		              LocalKeyIndex, nextTimeBytes, MIN(AES_IV_SIZE, nextTimeByteCount)
-		     );
-		     ptextBuf = DecryptDumpImage(decryptCipher, CryptoUploadBuffer, 
-				                 CryptoUploadBufferByteCount);
-		     if(ptextBuf != NULL && ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 
-		          MemoryUploadBlock((void *) (ptextBuf + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
-					    CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
-			  free(ptextBuf);
-			  operationStatus = true;
-			  break;
-		     }
-		}
-	    }*/
 	    // cleanup data and free unused buffers:
 	    DecryptDumpAfterUpload = false;
-	    free(LocalIVSaltData);
             LocalIVSaltDataByteCount = 0;
 	    if(operationStatus) {
 	        IndicateCryptoUploadSuccess();
@@ -319,8 +296,10 @@ void XModemTick(void)
 	    else {
 	        IndicateCryptoUploadError();
 		XModemEncryptedUploadStatus = UPLOAD_STATUS_ERROR_ID;
+		if(!ValidDumpImageHeader(ptextBuf, CRYPTO_UPLOAD_HEADER_SIZE)) 
+			XModemEncryptedUploadStatus = COMMAND_INFO_OK_WITH_TEXT_ID;
 	    }
-	    CommandLinePendingTaskFinished(XModemEncryptedUploadStatus, NULL);
+	    DeleteCipherObject(decryptCipher);
 	}
 	break;
 

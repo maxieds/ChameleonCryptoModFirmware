@@ -8,9 +8,10 @@
 
 #define AES_BLOCK_SIZE                (16)
 #define AES_IV_SIZE                   (16)
+#define AES_CIPHERT_SIZE              (240)
 
-typedef struct AES128 AES128;
 #if !defined(__cplusplus)
+     typedef struct AES128 AES128;
      struct AESCFBCipher_t;
      typedef struct AESCFBCipher_t AESCipher_t;
 #else
@@ -18,5 +19,10 @@ typedef struct AES128 AES128;
      #include <AESCrypto/CFB.h>
      typedef CFB<AES128> AESCipher_t;
 #endif
+
+#include <stddef.h>
+
+extern bool cipherObjectMutex;
+extern uint8_t cipherObjectBytes[AES_CIPHERT_SIZE];
 
 #endif

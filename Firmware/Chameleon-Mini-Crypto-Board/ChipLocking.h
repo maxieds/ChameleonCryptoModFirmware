@@ -21,12 +21,10 @@
 #include "Common.h"
 #include "ChameleonCrypto.h"
 
-static const size_t FLASH_LOCK_PPH_LENGTH = strlen(DEFAULT_FLASH_LOCK_PASSPHRASE);
-
 int PassphraseHashCompare(const char *passphrase, const char *storedHashString);
 
 INLINE bool AuthLockByPassphrase(const char *authPwd) { 
-     if(authPwd == NULL || !FLASH_LOCK_PPH_LENGTH || 
+     if(authPwd == NULL || 
 	PassphraseHashCompare(authPwd, DEFAULT_FLASH_LOCK_PASSPHRASE)) {
           return false;
      }

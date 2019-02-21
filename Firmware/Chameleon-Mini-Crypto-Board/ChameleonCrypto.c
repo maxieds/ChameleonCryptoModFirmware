@@ -8,6 +8,8 @@
 #include <util/delay.h>
 #include <util/crc16.h>
 
+#include <AESCrypto.h>
+
 #include "ChameleonCrypto.h"
 #include "Settings.h"
 #include "Terminal/Commands.h"
@@ -16,27 +18,27 @@
 #include "LED.h"
 #include "LEDHook.h"
 
-uint8_t EEMEM CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
-size_t EEMEM CryptoUploadBufferByteCount;
+uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
+uint16_t CryptoUploadBufferByteCount;
 
 void InitCryptoDumpBuffer() { 
      uint8_t zeroFillByte = 0x00;
-     for(int b = 0; b < CRYPTO_UPLOAD_HEADER_SIZE + CRYPTO_UPLOAD_BUFSIZE; b++) {
-          WriteEEPBlock((uint16_t) &(CryptoUploadBuffer[b]), &zeroFillByte, 1);
-     } 
+     memset(CryptoUploadBuffer, 0, CRYPTO_UPLOAD_BUFSIZE);
      CryptoUploadBufferByteCount = 0;
 }
 
 bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength) { 
-     if(bufLength <= CRYPTO_UPLOAD_HEADER_SIZE || dumpDataBuf == NULL) { 
+     if(!bufLength || bufLength < CRYPTO_UPLOAD_HEADER_SIZE || dumpDataBuf == NULL) { 
           return false;
      }
-     char dumpHeaderBytes[CRYPTO_UPLOAD_HEADER_SIZE];
-     ReadEEPBlock((uint16_t) &dumpDataBuf, (void *) dumpHeaderBytes, CRYPTO_UPLOAD_HEADER_SIZE);
-     if(memcmp(dumpHeaderBytes, PSTR(CRYPTO_UPLOAD_HEADER), CRYPTO_UPLOAD_HEADER_SIZE)) { 
-          return false;
+     char dumpBytesHexStr[2 * bufLength + 1], headerStr[bufLength];
+     BufferToHexString(dumpBytesHexStr, 2 * bufLength + 1, dumpDataBuf, bufLength);
+     strncpy_P(headerStr, PSTR(CRYPTO_UPLOAD_HEADER), bufLength);
+     if(!strncmp_P(dumpBytesHexStr, PSTR(CRYPTO_UPLOAD_HEADER), bufLength - 1) && 
+	dumpDataBuf[bufLength - 1] == (uint8_t) headerStr[bufLength - 1]) { 
+          return true;
      }
-     return true;
+     return false;
 }
 
 bool SetKeyData(size_t keyIndex, uint8_t *keyData, size_t keyLength) { 
@@ -81,11 +83,9 @@ bool PassphraseToAESKeyData(size_t keyIndex, const char *passphrase) {
      uint8_t *pphBytes = (uint8_t *) passphrase;
      uint8_t pphByteCount = strlen(passphrase);
      SHAHash_t *hasherObj = GetNewHasherObject();
-     uint8_t *firstRoundHashBytes = ComputeHashBytes(hasherObj, pphBytes, pphByteCount, 
-		                    pphBytes, pphByteCount);
+     uint8_t *firstRoundHashBytes = ComputeHashBytes(hasherObj, pphBytes, pphByteCount);
      size_t frhbCount = GetHashByteCount(hasherObj);
-     uint8_t *keyData = ComputeHashBytes(hasherObj, firstRoundHashBytes, 
-                                         frhbCount, pphBytes, pphByteCount);
+     uint8_t *keyData = ComputeHashBytes(hasherObj, firstRoundHashBytes, frhbCount);
      size_t keyDataSize = GetHashByteCount(hasherObj);
      ClearHashInitData(hasherObj);
      DeleteHasherObject(hasherObj);
@@ -106,7 +106,7 @@ Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,
           DeleteCipherObject(cipherObj);
           return NULL;
      }
-     else {
+     else if(cipherObj == NULL) {
           return NULL;
      }
      if(SetCipherKey(cipherObj, keyData, keyLength) && 
@@ -120,27 +120,22 @@ Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,
 Cipher_t PrepareBlockCipherObjectFromKeyIndex(size_t keyIndex, 
 		                              const uint8_t *initVecData, size_t ivLength) { 
      if(keyIndex < 0 || keyIndex >= NUM_KEYS_STORAGE) {
-          Cipher_t cipherObj;
-	  return cipherObj;
+	  return NULL;
      }
      uint8_t keyData[MAX_KEY_LENGTH];
      size_t keyLength = GlobalSettings.KeyData.keyLengths[keyIndex];
-     ReadEEPBlock((uint16_t) &(GlobalSettings.KeyData.keys[keyIndex]), keyData, keyLength);
+     memcpy(keyData, &(GlobalSettings.KeyData.keys[keyIndex]), keyLength);
      return PrepareBlockCipherObject(keyData, keyLength, initVecData, ivLength);
 }
 
-uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, 
-		           uint16_t byteBufLen) { 
-     if(byteBuf == NULL || byteBufLen <= 0) { 
+uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *ivSaltBytes, uint16_t saltByteCount, 
+		           const uint8_t *byteBuf, uint16_t byteBufLen) { 
+     if(cipherObj == NULL || byteBuf == NULL || byteBufLen <= 0) { 
           return NULL;
      }
-     return NULL;
-     uint8_t *plaintextBuf = (uint8_t *) malloc(byteBufLen * sizeof(uint8_t));
-     uint8_t byteBufLocalCopy[byteBufLen];
-     ReadEEPBlock((uint16_t) &byteBuf, byteBufLocalCopy, byteBufLen);
-     if(!DecryptDataBuffer(cipherObj, plaintextBuf, byteBufLocalCopy, byteBufLen)) { 
-          free(plaintextBuf);
-	  return NULL;
+     uint8_t *plaintextBuf = CryptoUploadBuffer; 
+     if(!DecryptDataBuffer(cipherObj, plaintextBuf, byteBuf, byteBufLen)) {
+          return NULL;
      }
      return plaintextBuf;
 }

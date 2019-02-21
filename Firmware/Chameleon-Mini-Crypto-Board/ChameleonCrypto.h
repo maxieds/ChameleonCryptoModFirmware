@@ -26,11 +26,11 @@
 #define BLOCK_CIPHER_KEY_BYTE_SIZE      (128 / BITS_PER_BYTE)
 #define MAX_KEY_LENGTH            (BLOCK_CIPHER_KEY_BYTE_SIZE)
 
-#define CRYPTO_UPLOAD_HEADER      "MFCLASSIC1K-DMP"
-#define CRYPTO_UPLOAD_HEADER_SIZE (15)
-#define CRYPTO_UPLOAD_BUFSIZE     (1024 + CRYPTO_UPLOAD_HEADER_SIZE) // for MF1K dump sizes
+#define CRYPTO_UPLOAD_HEADER      (CRYPTO_DUMP_HEADER_STRING)
+#define CRYPTO_UPLOAD_HEADER_SIZE (CRYPTO_DUMP_HEADER_BYTES)
+#define CRYPTO_UPLOAD_BUFSIZE     (1152) //(1265 + CRYPTO_UPLOAD_HEADER_SIZE) // for MF1K dump sizes
 
-typedef struct AESCipher_t * Cipher_t;
+typedef AESCipher_t* Cipher_t;
 
 typedef size_t KeyAuth_t; // Stores: > 0 indicating number of remaining key data edits if authenticated 
 typedef struct {
@@ -43,7 +43,7 @@ typedef struct {
  * variables, we carve out a special one-time placeholder for this buffer data in the EEPROM segment: 
  */
 extern uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
-extern size_t CryptoUploadBufferByteCount;
+extern uint16_t CryptoUploadBufferByteCount;
 
 /* Administrative checking and prep routines: */
 void InitCryptoDumpBuffer();
@@ -64,7 +64,8 @@ Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,
 Cipher_t PrepareBlockCipherObjectFromKeyIndex(size_t keyIndex, 
 	                                      const uint8_t *initVecData, size_t ivLength); 
 uint8_t * EncryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, uint16_t byteBufLen);
-uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *byteBuf, uint16_t byteBufLen);
+uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *ivSaltBytes, uint16_t saltByteCount, 
+		           const uint8_t *byteBuf, uint16_t byteBufLen);
 
 /* Physical indicators of success and/or errors by blinking LEDs on the board, or a permanent 
  * RED LED indicator. The new "UPLOAD_STATUS" command can be used to verify status of the uploading of 

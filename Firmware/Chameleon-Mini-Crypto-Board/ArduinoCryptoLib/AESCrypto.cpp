@@ -5,8 +5,43 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "AESCryptoCPP.cpp"
+
+bool cipherObjectMutex = false;
+uint8_t cipherObjectBytes[AES_CIPHERT_SIZE];
+
+/* C++ versions of these functions: */
+AESCipher_t * CreateNewCipherObject() {
+     return new AESCipher_t();
+}
+
+void DeleteCipherObject(AESCipher_t *cipher) {
+     if(cipher != NULL) {
+	  delete cipher;
+     }
+}
+/*AESCipher_t * CreateNewCipherObject() {
+     if(cipherObjectMutex) {
+          return NULL;
+     }
+     cipherObjectMutex = true;
+     AESCipher_t *cipherObjectPtr = reinterpret_cast<AESCipher_t *>(cipherObjectBytes);
+     cipherObjectPtr->clear();
+     return cipherObjectPtr;
+     //AESCipher_t *cipherObjPtr = (AESCipher_t *) malloc(sizeof(AES_CIPHERT_SIZE));
+     //memset(cipherObjPtr, 0, AES_CIPHERT_SIZE);
+     //return cipherObjPtr;
+}
+
+void DeleteCipherObject(AESCipher_t *cipher) {
+     if(cipher != NULL) {
+          cipher->clear();
+	  free(cipher);
+	  cipherObjectMutex = false;
+     }
+}*/
 
 void ClearCipherObject(AESCipher_t *cipher) {
      if(cipher != NULL) {
@@ -39,13 +74,13 @@ bool EncryptDataBuffer(AESCipher_t *cipher, uint8_t *encDataBuf,
      //   curlen = dataByteCount - offset;
      //   if (curlen > AES_BLOCK_SIZE)
      //       curlen = AES_BLOCK_SIZE;
-     //   cipher->encrypt(encDataBuf + offset, ptextDataBuf + offset, curlen);
+     //   cipher->encryptBlock(encDataBuf + offset, ptextDataBuf + offset, curlen);
      //}
      cipher->encrypt(encDataBuf, ptextDataBuf, dataByteCount);
      return true;
 }
 
-bool DecryptDataBuffer(AESCipher_t *cipher, uint8_t *ptextDataBuf, const uint8_t *encDataBuf, 
+bool DecryptDataBuffer(AESCipher_t *cipher, uint8_t *ptextDataBuf, uint8_t *encDataBuf, 
 		       size_t dataBufByteCount) { 
      if(cipher == NULL || ptextDataBuf == NULL || encDataBuf == NULL) { 
           return false;
@@ -55,7 +90,7 @@ bool DecryptDataBuffer(AESCipher_t *cipher, uint8_t *ptextDataBuf, const uint8_t
      //   curlen = dataBufByteCount - offset;
      //   if (curlen > AES_BLOCK_SIZE)
      //       curlen = AES_BLOCK_SIZE;
-     //   cipher->decrypt(ptextDataBuf + offset, encDataBuf + offset, curlen);
+     //   cipher->decryptBlock(ptextDataBuf + offset, encDataBuf + offset, curlen);
      //}
      cipher->decrypt(ptextDataBuf, encDataBuf, dataBufByteCount);
      return true;

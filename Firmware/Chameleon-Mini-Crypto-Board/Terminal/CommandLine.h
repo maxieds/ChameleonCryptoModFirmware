@@ -11,6 +11,11 @@
 #include "Terminal.h"
 #include "Commands.h"
 
+#define STATUS_MESSAGE_TRAILER    "\r\n"
+#define OPTIONAL_ANSWER_TRAILER    "\r\n"
+
+const char* GetStatusMessageP(CommandStatusIdType StatusId);
+
 void CommandLineInit(void);
 bool CommandLineProcessByte(uint8_t Byte);
 void CommandLineTick(void);

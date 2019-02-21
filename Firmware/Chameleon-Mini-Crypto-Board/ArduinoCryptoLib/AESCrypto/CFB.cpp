@@ -82,7 +82,7 @@ bool CFBCommon::setIV(const uint8_t *iv, size_t len)
     return true;
 }
 
-void CFBCommon::encrypt(uint8_t *output, const uint8_t *input, size_t len)
+void CFBCommon::encrypt(uint8_t *output, const uint8_t *input, uint16_t len)
 {
     uint8_t size;
     while (len > 0) {
@@ -109,8 +109,10 @@ void CFBCommon::encrypt(uint8_t *output, const uint8_t *input, size_t len)
     }
 }
 
-void CFBCommon::decrypt(uint8_t *output, const uint8_t *input, size_t len)
+void CFBCommon::decrypt(uint8_t *outputBuf, const uint8_t *inputBuf, uint16_t len)
 {
+    volatile const uint8_t *input = inputBuf;
+    volatile uint8_t *output = outputBuf;
     uint8_t size;
     while (len > 0) {
         // If we have exhausted the current keystream block, then encrypt

@@ -283,7 +283,7 @@ size_t GetChameleonBoardUSBSerial(char *serialStrBuf, size_t maxBufBytes) {
      uint16_t fullSerialStr[MAX_KEY_LENGTH];
      USB_Device_GetSerialString((uint16_t *) fullSerialStr);
      size_t serialBytes = strlen((uint8_t *) fullSerialStr);
-     size_t byteCount = memcpy(serialStrBuf, fullSerialStr, MIN(serialBytes, maxBufBytes));
-     return byteCount;
+     memcpy(serialStrBuf, fullSerialStr, MIN(serialBytes, maxBufBytes));
+     return MIN(serialBytes, maxBufBytes);
 }
 

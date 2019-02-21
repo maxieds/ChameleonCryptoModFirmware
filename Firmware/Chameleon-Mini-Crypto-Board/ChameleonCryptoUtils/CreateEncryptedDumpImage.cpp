@@ -140,18 +140,24 @@ UtilityExecData_t ParseCommandLineData(int argc, char** &argv) {
 	       runtimeDataOptions.dumpFileOperation = OPERATION_DECRYPT;
 	  }
 	  else if(!strcmp(long_options_spec[option_index].name, "input-dump-image")) { 
-               strncpy(runtimeDataOptions.inputDumpFilePath, optarg, MAX_BUFFER_SIZE);
+               char *inputExtPos = strrchr(optarg, '.');
+	       size_t basePathLen = inputExtPos ? inputExtPos - optarg : MAX_BUFFER_SIZE;
+	       strncpy(runtimeDataOptions.inputDumpFilePath, optarg, basePathLen);
+               runtimeDataOptions.inputDumpFilePath[basePathLen] = '\0';
+	       const char *inputFileExt = runtimeDataOptions.dumpFileOperation == OPERATION_ENCRYPT ? 
+			                  ".dmp" : ".edmp";
+	       strcat(runtimeDataOptions.inputDumpFilePath, inputFileExt);
 	       if(!alreadySetOutputPath) { 
-                    char *inputFileExt = strrchr(optarg, '.');
+                    char *inputFileExtPos = strrchr(optarg, '.');
 		    const char *outFileExt = runtimeDataOptions.dumpFileOperation == OPERATION_ENCRYPT ? 
 			                     ".edmp" : ".pdmp";
-		    if(inputFileExt == NULL) { 
+		    if(inputFileExtPos == NULL) { 
 		         strncpy(runtimeDataOptions.outputDumpFilePath, 
 				 runtimeDataOptions.inputDumpFilePath, MAX_BUFFER_SIZE);
 			 strncat(runtimeDataOptions.outputDumpFilePath, outFileExt, MAX_BUFFER_SIZE);
 			 continue;
 		    }
-		    size_t mainFilePathLen = inputFileExt - optarg;
+		    size_t mainFilePathLen = inputFileExtPos - optarg;
 		    strncpy(runtimeDataOptions.outputDumpFilePath, optarg, mainFilePathLen);
 		    strncat(runtimeDataOptions.outputDumpFilePath, outFileExt, MAX_BUFFER_SIZE);
 	       }
@@ -199,7 +205,7 @@ int main(int argc, char **argv) {
 	  return -2;
      }
      
-     //fprintf(stderr, "sizeof(AESCipher_t) = %d\n", sizeof(AESCipher_t));
+     fprintf(stderr, "sizeof(AESCipher_t) = %d\n", sizeof(AESCipher_t));
      //int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
      //uint8_t *dataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
      //LoadFileIntoBuffer(runtimeOptions.inputDumpFilePath, dataBuf, dataBufByteCount);
@@ -273,8 +279,11 @@ int main(int argc, char **argv) {
 	  memcpy(unencDataBuf, encDataBuf, dataBufByteCount);
 	  if(!DecryptDataBuffer(cipherObj, unencDataBuf, encDataBuf, dataBufByteCount) || 
 	     memcmp(unencDataBuf, CRYPTO_UPLOAD_HEADER, CRYPTO_UPLOAD_HEADER_SIZE)) {
-               fprintf(stderr, "ERROR: Consistency in decrypted text, header data NOT correct ...\n%c\n", 
-		       unencDataBuf + 18);
+               uint8_t headerStr[CRYPTO_UPLOAD_HEADER_SIZE + 1];
+	       memcpy(headerStr, unencDataBuf, CRYPTO_UPLOAD_HEADER_SIZE);
+	       headerStr[CRYPTO_UPLOAD_HEADER_SIZE] = '\0';
+	       fprintf(stderr, "ERROR: Consistency in decrypted text, header data NOT correct ...\n%s\n", 
+		       headerStr);
 	       free(unencDataBuf);
 	       free(encDataBuf);
 	       return 6;
