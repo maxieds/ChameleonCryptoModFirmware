@@ -336,9 +336,9 @@ const PROGMEM CommandEntryType CommandTable[] = {
     NO_GET_FUNCTION
   },
   {
-    COMMAND_KEYAUTH,
+    COMMAND_DEVICEAUTH,
     NO_EXEC_FUNCTION,
-    CommandExecParamKeyAuth, 
+    CommandExecParamDeviceAuth, 
     NO_SET_FUNCTION, 
     NO_GET_FUNCTION
   },
@@ -374,8 +374,8 @@ const PROGMEM CommandEntryType CommandTable[] = {
   },
   {
     COMMAND_UNLOCK_CHIP, 
-    NO_EXEC_FUNCTION,
-    CommandExecParamUnlockChip,
+    CommandExecUnlockChip,
+    NO_PARAM_FUNCTION,
     NO_SET_FUNCTION,
     NO_GET_FUNCTION
   },

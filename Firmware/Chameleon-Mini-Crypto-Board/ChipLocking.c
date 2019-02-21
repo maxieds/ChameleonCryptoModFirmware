@@ -23,18 +23,3 @@ int PassphraseHashCompare(const char *passphrase, const char *storedHashString) 
      return compResult;
 }
 
-size_t ChameleonLockEEPROMMemoryBits() { 
-     return 0;
-}
-
-size_t ChameleonUnlockEEPROMMemoryBits() { 
-     return 0;
-}
-
-size_t ChameleonLockBootloaderMemoryBits() { 
-     return 0;
-}
-
-size_t ChameleonUnlockBootloaderMemoryBits() { 
-     return 0;
-}

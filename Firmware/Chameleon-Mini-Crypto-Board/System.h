@@ -36,8 +36,8 @@ void SystemEnterBootloader(void);
 void SystemStartUSBClock(void);
 void SystemStopUSBClock(void);
 void SystemInterruptInit(void);
-INLINE bool SystemTick100ms(void);
 
+INLINE bool SystemTick100ms(void);
 INLINE bool SystemTick100ms(void)
 {
     if (RTC.INTFLAGS & RTC_COMPIF_bm) {

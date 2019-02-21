@@ -5,9 +5,11 @@
  *      Author: skuser
  */
 
+#include <avr/interrupt.h>
+
 #include "System.h"
 #include "LED.h"
-#include <avr/interrupt.h>
+#include "ChipLocking.h"
 
 #ifndef WDT_PER_500CLK_gc
 #define WDT_PER_500CLK_gc WDT_PER_512CLK_gc
@@ -68,6 +70,9 @@ void SystemInit(void)
 
     /* Enable DMA */
     DMA.CTRL = DMA_ENABLE_bm | DMA_DBUFMODE_DISABLED_gc | DMA_PRIMODE_RR0123_gc;
+
+    /* Extra special boot-time protections for the crypto board: */
+    ConfigureBootTimeProtections();
 
 }
 

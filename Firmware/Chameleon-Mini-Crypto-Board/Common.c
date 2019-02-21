@@ -92,6 +92,18 @@ size_t IntegerToStringBuffer(uint16_t IntegerDataValue, char *DestStringBuffer, 
      return strBufferBytes;
 }
 
+size_t ByteToBinaryString(char *BinaryStrDest, size_t MaxChars, uint8_t Byte) {
+     if(BinaryStrDest == NULL || MaxChars <= 0) {
+          return 0;
+     }
+     size_t bitsScribed;
+     for(bitsScribed = 0; bitsScribed < MIN(BITS_PER_BYTE, MaxChars - 1); bitsScribed++) {
+          uint8_t bitMask = (0x01 << bitsScribed);
+	  BinaryStrDest[bitsScribed] = (Byte & bitMask) ? '1' : '0';
+     }
+     return bitsScribed;
+}
+
 uint8_t BitReverseByte(uint8_t Byte)
 {
     extern const uint8_t PROGMEM BitReverseByteTable[];

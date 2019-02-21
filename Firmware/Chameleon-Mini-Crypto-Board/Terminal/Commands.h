@@ -209,8 +209,8 @@ CommandStatusIdType CommandGetField(char* OutMessage);
 CommandStatusIdType CommandExecClone(char* OutMessage);
 
 /* ChameleonMiniCryptoBoard mod key handling commands: */
-#define COMMAND_KEYAUTH "KEYAUTH"
-CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InParams);
+#define COMMAND_DEVICEAUTH "DEVICEAUTH"
+CommandStatusIdType CommandExecParamDeviceAuth(char *OutMessage, const char *InParams);
 
 #define COMMAND_SETKEY "SETKEY"
 CommandStatusIdType CommandExecParamSetKey(char* OutMessage, const char *InParams);
@@ -226,7 +226,7 @@ CommandStatusIdType CommandExecParamGetKey(char* OutMessage, const char *InParam
 CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InParam);
 
 #define COMMAND_UNLOCK_CHIP "UNLOCK_CHIP"
-CommandStatusIdType CommandExecParamUnlockChip(char *OutMessage, const char *InParam);
+CommandStatusIdType CommandExecUnlockChip(char *OutMessage);
 
 #define COMMAND_LIST_END    ""
 /* Defines the end of command list. This is no actual command */

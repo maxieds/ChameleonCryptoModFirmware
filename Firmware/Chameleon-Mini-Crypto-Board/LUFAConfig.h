@@ -76,6 +76,7 @@
         #define MAX_ENDPOINT_INDEX               5
 //        #define NO_DEVICE_REMOTE_WAKEUP
 //        #define NO_DEVICE_SELF_POWER
+#define ARCH                                     ARCH_XMEGA
 
 size_t GetChameleonBoardUSBSerial(char *serialStrBuf, size_t maxBufBytes);
 

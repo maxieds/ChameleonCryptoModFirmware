@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
+#include <errno.h>
 
 #include <avr/pgmspace.h>
 #include <avr/io.h>
-//#include <Settings.h>
+#include <avr/lock.h>
 
 #include "Commands.h"
 #include "XModem.h"
@@ -20,7 +22,10 @@
 #include "../Codec/Codec.h"
 #include "../ChameleonCrypto.h"
 #include "../ChipLocking.h"
-#include "XModem.h"
+#include "../Common.h"
+
+/* Sane (default disabled) LOCKBITS initialization: */
+LOCKMEM = 0xff;
 
 CommandStatusIdType CommandGetVersion(char* OutParam)
 {
@@ -166,9 +171,6 @@ CommandStatusIdType CommandExecUploadStatus(char *OutMessage) {
      if(uploadStatus == UPLOAD_STATUS_ERROR_ID) { // reset to OK after checking this:
           XModemEncryptedUploadStatus = UPLOAD_STATUS_OK_ID;
      }
-     char hexStr[65];
-     BufferToHexString(hexStr, 65, CryptoUploadBuffer, 64);
-     snprintf(OutMessage, TERMINAL_BUFFER_SIZE, "%d&&%s", (int) CryptoUploadBufferByteCount, hexStr);
      return uploadStatus;
 }
 
@@ -182,20 +184,20 @@ CommandStatusIdType CommandExecReset(char* OutMessage)
 {
   USB_Detach();
   USB_Disable();
-
   SystemReset();
-
   return COMMAND_INFO_OK_ID;
 }
 
 #ifdef SUPPORT_FIRMWARE_UPGRADE
 CommandStatusIdType CommandExecUpgrade(char* OutMessage)
 {
+  if(ActiveConfiguration.KeyChangeAuth <= 0) {
+       return COMMAND_ERR_AUTH_FAILED_ID;
+  }
+  ActiveConfiguration.KeyChangeAuth -= 1;
   USB_Detach();
   USB_Disable();
-
   SystemEnterBootloader();
-
   return COMMAND_INFO_OK_ID;
 }
 #endif
@@ -710,7 +712,7 @@ CommandStatusIdType CommandExecClone(char *OutMessage)
     return TIMEOUT_COMMAND;
 }
 
-CommandStatusIdType CommandExecParamKeyAuth(char *OutMessage, const char *InParams) { 
+CommandStatusIdType CommandExecParamDeviceAuth(char *OutMessage, const char *InParams) { 
      if(InParams == NULL || InParams[0] == '\0') {
           strncpy_P(OutMessage, PSTR("No authentication passhrase specified."), TERMINAL_BUFFER_SIZE);
 	  return COMMAND_ERR_INVALID_PARAM_ID;
@@ -847,31 +849,52 @@ CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParam
 #endif
 
 CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InParam) {
-     if(REQUIRE_PASSPHRASE_TO_LOCK_CHIP) { 
-          char *InParamCopy = (char *) malloc((strlen(InParam) + 1) * sizeof(char));
-	  strcpy(InParamCopy, InParam);
-	  char *authPwd = strchr(InParamCopy, COMMAND_ARGSEP);
-          if(!AuthLockByPassphrase(authPwd)) { 
-               strncpy(OutMessage, PSTR("Invalid flash password specified."), TERMINAL_BUFFER_SIZE);
-	       free(InParamCopy);
-	       return COMMAND_ERR_AUTH_FAILED_ID;
-	  }
+     if(ActiveConfiguration.KeyChangeAuth <= 0 && REQUIRE_PASSPHRASE_TO_LOCK_CHIP) {
+         return COMMAND_ERR_AUTH_FAILED_ID;
      }
-     ChameleonLockBootloaderMemoryBits();
-     ChameleonLockEEPROMMemoryBits();
-     return COMMAND_INFO_TRUE_ID;
+     uint8_t prevLockBitsByte = pgm_read_byte(&RuntimeLockBits);
+     if(prevLockBitsByte != 0xff) {
+          strncpy_P(OutMessage, PSTR("Lock bits already set. Call UNLOCK_CHIP to reset them first."), 
+	            TERMINAL_BUFFER_SIZE);
+	  return COMMAND_ERR_AUTH_FAILED;
+     }
+     uint8_t lockBitsByte = 0x00;
+     if(*InParam != '\0' && strchrnul(InParam, COMMAND_ARGSEP) != '\0') {
+          return COMMAND_ERR_INVALID_PARAM_ID;
+     }
+     else if(*InParam != '\0') {
+          char *intEndPtr;
+          long hexBytes = strtoul(InParam, &intEndPtr, 16);
+          if((errno == ERANGE && hexBytes == LONG_MAX) || 
+	     (errno != 0 && hexBytes == 0)) {
+	       return COMMAND_ERR_INVALID_PARAM_ID;
+	  }
+	  lockBitsByte = hexBytes & 0xffL;
+     }
+     if(REQUIRE_PASSPHRASE_TO_LOCK_CHIP) { 
+          ActiveConfiguration.KeyChangeAuth -= 1;
+     }
+     RuntimeLockBits = lockBitsByte;
+     char binaryLockBits[BITS_PER_BYTE + 1];
+     ByteToBinaryString(binaryLockBits, BITS_PER_BYTE + 1, lockBitsByte);
+     snprintf_P(OutMessage, TERMINAL_BUFFER_SIZE, PSTR("LOCKBITS: %02x -> %02x [%s]"), 
+		prevLockBitsByte, lockBitsByte, binaryLockBits);
+     return COMMAND_INFO_OK_WITH_TEXT_ID;
 }
 
-CommandStatusIdType CommandExecParamUnlockChip(char *OutMessage, const char *InParam) { 
-     char *InParamCopy = (char *) malloc((strlen(InParam) + 1) * sizeof(char));
-     strcpy(InParamCopy, InParam);
-     char *authPwd = strchr(InParamCopy, COMMAND_ARGSEP);
-     if(!AuthLockByPassphrase(authPwd)) { 
-          strncpy(OutMessage, PSTR("Invalid flash password specified."), TERMINAL_BUFFER_SIZE);
-	  free(InParamCopy);
-	  return COMMAND_ERR_AUTH_FAILED_ID;
+CommandStatusIdType CommandExecUnlockChip(char *OutMessage) { 
+     if(ActiveConfiguration.KeyChangeAuth <= 0) {
+          return COMMAND_ERR_AUTH_FAILED_ID;
      }
-     ChameleonUnlockBootloaderMemoryBits();
-     ChameleonUnlockEEPROMMemoryBits();
-     return COMMAND_INFO_TRUE_ID;
+     ActiveConfiguration.KeyChangeAuth -= 1;
+     uint8_t prevLockBitsByte = RuntimeLockBits; 
+     RuntimeLockBits = 0xff;
+     uint8_t nextLockBitsByte = RuntimeLockBits;
+     snprintf_P(OutMessage, TERMINAL_BUFFER_SIZE, PSTR("LOCKBITS: %02x -> %02x (Operation %s)"), 
+	        prevLockBitsByte, nextLockBitsByte, 
+                prevLockBitsByte != nextLockBitsByte ? "SUCCESS" : "FAILED");
+     if(nextLockBitsByte == 0xff) {
+          return COMMAND_INFO_TRUE_ID;
+     }
+     return COMMAND_INFO_FALSE_ID;     
 }

@@ -31,10 +31,9 @@ INLINE bool AuthLockByPassphrase(const char *authPwd) {
      return true;
 }
 
-/* Chip locking routines */
-size_t ChameleonLockEEPROMMemoryBits();
-size_t ChameleonUnlockEEPROMMemoryBits();
-size_t ChameleonLockBootloaderMemoryBits();
-size_t ChameleonUnlockBootloaderMemoryBits();
+INLINE void ConfigureBootTimeProtections(void) {
+     // disable JTAG interface in software:
+     MCU_MCUCR = (1 << MCU_JTAGUID);
+}
 
 #endif

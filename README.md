@@ -147,7 +147,7 @@ $ sx EncMF1KDump.edmp | socat FILE:/dev/ttyACM0,b115200,raw -
 The effective changes in executive functioning and interface with our patched firmware versions of the 
 Chameleon Mini RevG boards are documented below in this section. 
 
-## New command: KEYAUTH
+## New command: DEVICEAUTH
 
 ### Description
 
@@ -165,7 +165,7 @@ SETTINGS        += -DDEFAULT_FLASH_LOCK_PASSPHRASE=\"$(FLASH_LOCK_PASSPHRASE)\"
 ### Usage
 
 ```
-KEYAUTH FlashLockPassword [NumberOfKeyChangesToAuth=1]
+DEVICEAUTH FlashLockPassword [NumberOfKeyChangesToAuth=1]
 ```
 * *FlashLockPassword* : Typically defined to be *MyFlashLockPwd11:-)*
 unless otherwise specified at compile time (you know who you are if/when this happens); 
@@ -177,7 +177,7 @@ command line.
 ### Example
 
 ```
-keyauth MyFlashLockPwd11:-) 5
+deviceauth MyFlashLockPwd11:-) 5
 100:OK
 ```
 
@@ -350,21 +350,23 @@ current status of the lock bits on the chip.
 
 ### Usage
 
+This command enables programming the lock bits (FUSES) in software from the Chameleon console. 
+The proposed inverse command (**UNLOCK_CHIP**) is documented below. In order to successfully 
+run this command you will need to authenticate with the **DEVICEAUTH** command first. 
+
 ```
-LOCK_CHIP [FlashLockPassword]
+LOCK_CHIP [LockByteHexString:XX]
 ```
-* *FlashLockPassword* : Typically defined to be *MyFlashLockPwd11:-)* 
-unless otherwise specified at compile time (you know who you are if/when this happens).
+* *LockByteHexString* : See the bitwise settings according to the following diagram:
+
+<img src="https://github.com/maxieds/ChameleonCryptoModFirmware/tree/master/Doc/CryptoBoard/LockBitByte.png" />
+
+The *AVR Libc* header ``#include <lock.h>`` also includes some useful macros and definitions. 
 
 ### Example
 
 ```
-LOCK_CHIP
-TODO
-```
-OR 
-```
-LOCK_CHIP MyFlashLockPwd11:-)
+LOCK_CHIP 0x00
 ```
 
 ## New command: UNLOCK_CHIP
@@ -374,19 +376,19 @@ LOCK_CHIP MyFlashLockPwd11:-)
 The counterpart and effective reversal operation for the **LOCK_CHIP** command 
 documented above. Notice that this command will only (possibly) succeed if the 
 *Makefile* option **ENABLE_CHIP_UNLOCKING** is set to a non-zero value at compile time. 
+The user will need to authenticate with the **DEVICEAUTH** command before proceeding with this 
+command.
 
 ### Usage
 
 ```
-UNLOCK_CHIP FlashLockPassword
+UNLOCK_CHIP
 ```
-* *FlashLockPassword* : Typically defined to be *MyFlashLockPwd11:-)* 
-unless otherwise specified at compile time (you know who you are if/when this happens).
 
 ### Example
 
 ```
-UNLOCK_PASSWORD MyFlashLockPwd11:-)
+UNLOCK_CHIP
 TODO
 ```
 
@@ -452,14 +454,21 @@ may now be repeated and followed thusly in testing out the API's functionality.
 
 # Reading and resources on locking features of the AVR ATMega128 chips in the Chameleon boards
 
-* [AVR ATMega128 chip capabilities](http://www.engbedded.com/fusecalc/) listing 
-* [Memory Lock bits explained](https://www.avrfreaks.net/comment/414083#comment-414083)
-* Tutorials on AVR FUSES: [here (good)](http://www.ladyada.net/learn/avr/fuses.html) and 
-[here (secondard)](https://embedds.com/all-you-need-to-know-about-avr-fuses/)
-* Note: It may be possible to set a flash / erase (EEPROM) password or key with ``avrdude`` directly; 
+## Programatic locking functionality added to the Chameleon
 
-# TODO List (for Maxie, aka  "the developer") 
+* Added **DEVICEAUTH** which lets users with a "*secret*" (Makefile / compile-time defined) backdoor 
+password authenticate with the system to load keys, view keys, and set (unset) locking bits. 
+Note that only a SHA256 hash of this password is stored within the firmware, so in principle this is 
+as safe as if a would-be reverse engineer hardware hacker gal were to obtain the */etc/shadow* 
+(*/etc/passwd*) files on a Unix system. It's not a perfect solution, but for now this is the only 
+sane way to do development without permanenty bricking some expensive test sets of Chameleon Mini 
+hardware.
+* The *Makefile* option **-DSUPPORT_FIRMWARE_UPGRADE** is enabled and password protected via the 
+**DEVICEAUTH** mechanism in the previous point. This provides another sane (RE: *for development*) 
+layer of getting the device back to bootloader mode where it can be reflashed with ``avrdude``.
 
-* Add custom debugging / logging codes associated with loading the encrypted dumps and the new 
-key storage routines. 
+## Further reading for future development 
+
+* [AVR ATMega128 chip capabilities](http://www.engbedded.com/fusecalc/) (FUSE bites) listing
+* [SPIEN=0 FUSE setting](https://www.avrfreaks.net/forum/spien) (*WARNING:* It should be hard to recover these expensiove boards after enabling this, so use only with caution ...) 
 
