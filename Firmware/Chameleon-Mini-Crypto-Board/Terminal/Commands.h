@@ -221,13 +221,6 @@ CommandStatusIdType CommandExecParamGenKey(char* OutMessage, const char *InParam
 #define COMMAND_GETKEY "GETKEY"
 CommandStatusIdType CommandExecParamGetKey(char* OutMessage, const char *InParams);
 
-/* ChameleonMiniCryptoBoard mod chip locking (hacking) commands: */
-#define COMMAND_LOCK_CHIP "LOCK_CHIP"
-CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InParam);
-
-#define COMMAND_UNLOCK_CHIP "UNLOCK_CHIP"
-CommandStatusIdType CommandExecUnlockChip(char *OutMessage);
-
 #define COMMAND_LIST_END    ""
 /* Defines the end of command list. This is no actual command */
 

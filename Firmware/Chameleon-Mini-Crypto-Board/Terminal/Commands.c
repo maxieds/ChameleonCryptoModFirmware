@@ -24,9 +24,6 @@
 #include "../ChipLocking.h"
 #include "../Common.h"
 
-/* Sane (default disabled) LOCKBITS initialization: */
-LOCKMEM = 0xff;
-
 CommandStatusIdType CommandGetVersion(char* OutParam)
 {
   snprintf_P(OutParam, TERMINAL_BUFFER_SIZE, PSTR(
@@ -848,53 +845,3 @@ CommandStatusIdType CommandExecParamGetKey(char *OutMessage, const char *InParam
 }
 #endif
 
-CommandStatusIdType CommandExecParamLockChip(char *OutMessage, const char *InParam) {
-     if(ActiveConfiguration.KeyChangeAuth <= 0 && REQUIRE_PASSPHRASE_TO_LOCK_CHIP) {
-         return COMMAND_ERR_AUTH_FAILED_ID;
-     }
-     uint8_t prevLockBitsByte = pgm_read_byte(&RuntimeLockBits);
-     if(prevLockBitsByte != 0xff) {
-          strncpy_P(OutMessage, PSTR("Lock bits already set. Call UNLOCK_CHIP to reset them first."), 
-	            TERMINAL_BUFFER_SIZE);
-	  return COMMAND_ERR_AUTH_FAILED;
-     }
-     uint8_t lockBitsByte = 0x00;
-     if(*InParam != '\0' && strchrnul(InParam, COMMAND_ARGSEP) != '\0') {
-          return COMMAND_ERR_INVALID_PARAM_ID;
-     }
-     else if(*InParam != '\0') {
-          char *intEndPtr;
-          long hexBytes = strtoul(InParam, &intEndPtr, 16);
-          if((errno == ERANGE && hexBytes == LONG_MAX) || 
-	     (errno != 0 && hexBytes == 0)) {
-	       return COMMAND_ERR_INVALID_PARAM_ID;
-	  }
-	  lockBitsByte = hexBytes & 0xffL;
-     }
-     if(REQUIRE_PASSPHRASE_TO_LOCK_CHIP) { 
-          ActiveConfiguration.KeyChangeAuth -= 1;
-     }
-     RuntimeLockBits = lockBitsByte;
-     char binaryLockBits[BITS_PER_BYTE + 1];
-     ByteToBinaryString(binaryLockBits, BITS_PER_BYTE + 1, lockBitsByte);
-     snprintf_P(OutMessage, TERMINAL_BUFFER_SIZE, PSTR("LOCKBITS: %02x -> %02x [%s]"), 
-		prevLockBitsByte, lockBitsByte, binaryLockBits);
-     return COMMAND_INFO_OK_WITH_TEXT_ID;
-}
-
-CommandStatusIdType CommandExecUnlockChip(char *OutMessage) { 
-     if(ActiveConfiguration.KeyChangeAuth <= 0) {
-          return COMMAND_ERR_AUTH_FAILED_ID;
-     }
-     ActiveConfiguration.KeyChangeAuth -= 1;
-     uint8_t prevLockBitsByte = RuntimeLockBits; 
-     RuntimeLockBits = 0xff;
-     uint8_t nextLockBitsByte = RuntimeLockBits;
-     snprintf_P(OutMessage, TERMINAL_BUFFER_SIZE, PSTR("LOCKBITS: %02x -> %02x (Operation %s)"), 
-	        prevLockBitsByte, nextLockBitsByte, 
-                prevLockBitsByte != nextLockBitsByte ? "SUCCESS" : "FAILED");
-     if(nextLockBitsByte == 0xff) {
-          return COMMAND_INFO_TRUE_ID;
-     }
-     return COMMAND_INFO_FALSE_ID;     
-}

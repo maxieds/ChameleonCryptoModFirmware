@@ -365,20 +365,6 @@ const PROGMEM CommandEntryType CommandTable[] = {
     NO_GET_FUNCTION
   },
 #endif 
-  {
-    COMMAND_LOCK_CHIP,
-    NO_EXEC_FUNCTION,
-    CommandExecParamLockChip, 
-    NO_SET_FUNCTION,
-    NO_GET_FUNCTION
-  },
-  {
-    COMMAND_UNLOCK_CHIP, 
-    CommandExecUnlockChip,
-    NO_PARAM_FUNCTION,
-    NO_SET_FUNCTION,
-    NO_GET_FUNCTION
-  },
   { /* This has to be last element */
     COMMAND_LIST_END,
     NO_EXEC_FUNCTION,

@@ -6,6 +6,12 @@
 #include "ChipLocking.h"
 #include <SHAHash.h>
 
+#if defined(CHAMBOARD_LOCKDOWN)
+     LOCKBITS = 0x00;
+#else
+     LOCKBITS = 0xff;
+#endif
+
 int PassphraseHashCompare(const char *passphrase, const char *storedHashString) { 
      if(passphrase == NULL || storedHashString == NULL) {
           return passphrase == storedHashString;

@@ -336,62 +336,6 @@ UPLOAD_STATUS
 181:UPLOAD OK
 ```
 
-## New command: LOCK_CHIP
-
-### Description
-
-A wrapper command which locks the EEPROM and memory bits on the Chameleon's on-board 
-*ATXMega128a4u* chip. Note that if the directive **REQUIRE_PASSPHRASE_TO_LOCK_CHIP** is 
-set to a non-zero value in the *Makefile*, then a password (i.e., the default backdoor 
-flash password specified at compile time) is required as a *non-optional* argument to the 
-command. Failure to authenticate with the appropriate password (if necessary per build 
-congiguration) will result in an error and the operation failing without changing the 
-current status of the lock bits on the chip. 
-
-### Usage
-
-This command enables programming the lock bits (FUSES) in software from the Chameleon console. 
-The proposed inverse command (**UNLOCK_CHIP**) is documented below. In order to successfully 
-run this command you will need to authenticate with the **DEVICEAUTH** command first. 
-
-```
-LOCK_CHIP [LockByteHexString:XX]
-```
-* *LockByteHexString* : See the bitwise settings according to the following diagram:
-
-<img src="https://github.com/maxieds/ChameleonCryptoModFirmware/tree/master/Doc/CryptoBoard/LockBitByte.png" />
-
-The *AVR Libc* header ``#include <lock.h>`` also includes some useful macros and definitions. 
-
-### Example
-
-```
-LOCK_CHIP 0x00
-```
-
-## New command: UNLOCK_CHIP
-
-### Description
-
-The counterpart and effective reversal operation for the **LOCK_CHIP** command 
-documented above. Notice that this command will only (possibly) succeed if the 
-*Makefile* option **ENABLE_CHIP_UNLOCKING** is set to a non-zero value at compile time. 
-The user will need to authenticate with the **DEVICEAUTH** command before proceeding with this 
-command.
-
-### Usage
-
-```
-UNLOCK_CHIP
-```
-
-### Example
-
-```
-UNLOCK_CHIP
-TODO
-```
-
 # Testing and crypto dump utilities
 
 ## Basic encryption scheme specs
@@ -457,7 +401,7 @@ may now be repeated and followed thusly in testing out the API's functionality.
 ## Programatic locking functionality added to the Chameleon
 
 * Added **DEVICEAUTH** which lets users with a "*secret*" (Makefile / compile-time defined) backdoor 
-password authenticate with the system to load keys, view keys, and set (unset) locking bits. 
+password authenticate with the system to load keys and view keys. 
 Note that only a SHA256 hash of this password is stored within the firmware, so in principle this is 
 as safe as if a would-be reverse engineer hardware hacker gal were to obtain the */etc/shadow* 
 (*/etc/passwd*) files on a Unix system. It's not a perfect solution, but for now this is the only 
