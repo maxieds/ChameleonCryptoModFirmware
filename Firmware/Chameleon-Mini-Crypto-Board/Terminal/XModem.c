@@ -281,7 +281,7 @@ void XModemTick(void)
 	    		                         LocalIVSaltData, LocalIVSaltDataByteCount, 
 	    				         CryptoUploadBuffer, CryptoUploadBufferByteCount);
 	    if(ptextBuf != NULL && CryptoUploadBufferByteCount >= CRYPTO_UPLOAD_HEADER_SIZE && 
-	       ValidDumpImageHeader(ptextBuf, CRYPTO_UPLOAD_HEADER_SIZE)) { 
+	       ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 
 		MemoryUploadBlock((void *) (ptextBuf + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
 				  CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
 		operationStatus = true;

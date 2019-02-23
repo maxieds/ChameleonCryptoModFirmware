@@ -1,4 +1,4 @@
-/* Crypto.c : Implement the cryptographic helper functions for loading encrypted dumps into memory;
+/* ChameleonCrypto.c : Implement the cryptographic helper functions for loading encrypted dumps into memory;
  * Author: Maxie D. Schmidt
  * Created: 01/24/2019
  */
@@ -9,6 +9,7 @@
 #include <util/crc16.h>
 
 #include <AESCrypto.h>
+#include <SHAHash.h>
 
 #include "ChameleonCrypto.h"
 #include "Settings.h"
@@ -22,23 +23,43 @@ uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
 uint16_t CryptoUploadBufferByteCount;
 
 void InitCryptoDumpBuffer() { 
-     uint8_t zeroFillByte = 0x00;
      memset(CryptoUploadBuffer, 0, CRYPTO_UPLOAD_BUFSIZE);
      CryptoUploadBufferByteCount = 0;
 }
 
-bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength) { 
-     if(!bufLength || bufLength < CRYPTO_UPLOAD_HEADER_SIZE || dumpDataBuf == NULL) { 
+bool VerifyDataHash(uint8_t *dataHashBytes, uint8_t *dataBytes, uint16_t dataByteCount) {
+     if(dataHashBytes == NULL || dataBytes == NULL) {
           return false;
      }
-     bufLength = CRYPTO_UPLOAD_HEADER_SIZE;
-     char dumpBytesHexStr[2 * bufLength + 1], headerHexStr[2 * bufLength + 1];
-     BufferToHexString(dumpBytesHexStr, 2 * bufLength + 1, dumpDataBuf, bufLength);
-     BufferToHexString(headerHexStr, 2 * bufLength + 1, CRYPTO_UPLOAD_HEADER, bufLength);
-     if(!strncmp(dumpBytesHexStr, headerHexStr, bufLength)) { 
-          return true;
+     SHAHash_t *hasherObj = GetNewHasherObject();
+     uint8_t *actualDataHashBytes = ComputeHashBytes(hasherObj, dataBytes, dataByteCount);
+     if(actualDataHashBytes == NULL || GetHashByteCount(hasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
+          fprintf(stderr, "ERROR: Unable to verify actual decrypted data hash ...\n");
+	  if(actualDataHashBytes != NULL) {
+               free(actualDataHashBytes);
+	  }
+	  return false;
      }
-     return false;
+     int hashCompareResult = memcmp(dataHashBytes, actualDataHashBytes, CRYPTO_UPLOAD_HEADER_SIZE);
+     free(actualDataHashBytes); actualDataHashBytes = NULL;
+     if(hashCompareResult) {
+          return false;
+     }
+     return true;
+}
+
+bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength) { 
+     if(!bufLength || bufLength <= CRYPTO_UPLOAD_HEADER_SIZE || dumpDataBuf == NULL) { 
+          return false;
+     }
+     bufLength -= CRYPTO_UPLOAD_HEADER_SIZE;
+     uint8_t dataHeaderBytes[CRYPTO_UPLOAD_HEADER_SIZE];
+     memcpy(dataHeaderBytes, dumpDataBuf, CRYPTO_UPLOAD_HEADER_SIZE);
+     dumpDataBuf += CRYPTO_UPLOAD_HEADER_SIZE;
+     if(!VerifyDataHash(dataHeaderBytes, dumpDataBuf, bufLength)) {
+          return false;
+     }
+     return true;
 }
 
 bool SetKeyData(size_t keyIndex, uint8_t *keyData, size_t keyLength) { 

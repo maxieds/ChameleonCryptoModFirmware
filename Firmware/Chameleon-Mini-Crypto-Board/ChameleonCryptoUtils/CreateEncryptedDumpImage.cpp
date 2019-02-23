@@ -16,6 +16,7 @@
 #include <time.h>
 
 #include <AESCryptoCPP.cpp>
+#include <SHAHash.h>
 
 typedef AESCipher_t * Cipher_t;
 
@@ -23,8 +24,8 @@ typedef AESCipher_t * Cipher_t;
 #define MAX_KEYDATA_BUFFER_SIZE      (2048)
 static const size_t BITS_PER_BYTE = 8;
 
-#define CRYPTO_UPLOAD_HEADER         ("MFCLASSIC1K-DMP")
-#define CRYPTO_UPLOAD_HEADER_SIZE    (15)
+#define CRYPTO_UPLOAD_HEADER_SIZE    (32)
+#define XMODEM_BLOCK_SIZE            (128)
 
 #define MIN(x, y)                    ((x) >= (y) ? (y) : (x))
 
@@ -98,9 +99,10 @@ int GetFileBytes(const char *filePath);
 int LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, int maxBytesToRead);
 bool WriteBufferToFile(const char *outputPath, uint8_t *fileBuffer, size_t bufByteCount);
 
-size_t HexStringToBuffer(void *Buffer, size_t MaxBytes, const char *HexIn);
+uint16_t HexStringToBuffer(void *Buffer, size_t MaxBytes, const char *HexIn);
 Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength, 
                                   const uint8_t *initVecData, size_t ivLength, bool setSalt = true);
+bool VerifyDataHash(uint8_t *dataHashBytes, uint8_t *dataBytes, uint16_t dataByteCount);
 
 void PrintUsage(const char *progName) { 
      fprintf(stderr, "Usage: %s [--encrypt|--decrypt]\n", progName);
@@ -215,8 +217,14 @@ int main(int argc, char **argv) {
      if(runtimeOptions.dumpFileOperation == OPERATION_ENCRYPT) { 
           int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
 	  if(!dataBufByteCount) { 
-               fprintf(stderr, "ERROR: Reading input dump file \"%s\" ...\n", runtimeOptions.inputDumpFilePath);
+               fprintf(stderr, "ERROR: Reading input dump file \"%s\" ...\n", 
+		       runtimeOptions.inputDumpFilePath);
 	       return 2;
+	  }
+	  else if((dataBufByteCount + CRYPTO_UPLOAD_HEADER_SIZE) % XMODEM_BLOCK_SIZE) {
+	       fprintf(stderr, "ERROR: The file size %d is not a multiple of %d ...\n", 
+		       dataBufByteCount, XMODEM_BLOCK_SIZE);
+	       return 6;
 	  }
 	  uint8_t *unencDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
 	  int actualByteCount = 0;
@@ -227,38 +235,58 @@ int main(int argc, char **argv) {
 	       free(unencDataBuf);
 	       return 3;
 	  }
+	  SHAHash_t *hasherObj = GetNewHasherObject();
+          uint8_t *dataHashBuf = ComputeHashBytes(hasherObj, unencDataBuf, dataBufByteCount);
+	  if(dataHashBuf == NULL || GetHashByteCount(hasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
+               fprintf(stderr, "ERROR: Unable to compute valid hash for the input file ...\n");
+	       free(unencDataBuf);
+	       if(dataHashBuf != NULL) {
+	            free(dataHashBuf);
+	       }
+	       return 7;
+	  }
+	  DeleteHasherObject(hasherObj);
 	  Cipher_t cipherObj = PrepareBlockCipherObject(runtimeOptions.keyDataBytes, 
 		 	                                runtimeOptions.keyDataByteCount, 
 							runtimeOptions.saltDataBytes, 
 							runtimeOptions.saltDataByteCount);
-	  uint8_t *encDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
+	  uint8_t *encDataBuf = (uint8_t *) malloc((dataBufByteCount + CRYPTO_UPLOAD_HEADER_SIZE) * 
+			                           sizeof(uint8_t));
  	  memset(encDataBuf, 0xBA, sizeof(encDataBuf));
 	  if(cipherObj == NULL || encDataBuf == NULL || unencDataBuf == NULL) {
                fprintf(stderr, "ERROR: NULL pointer(s), %p : %p : %p [%02x]\n", cipherObj, encDataBuf, 
 		       unencDataBuf, dataBufByteCount);
 	  }
-          if(!EncryptDataBuffer(cipherObj, encDataBuf, unencDataBuf, dataBufByteCount)) {
+          if(!EncryptDataBuffer(cipherObj, encDataBuf, dataHashBuf, CRYPTO_UPLOAD_HEADER_SIZE) || 
+	     !EncryptDataBuffer(cipherObj, encDataBuf + CRYPTO_UPLOAD_HEADER_SIZE, unencDataBuf, 
+		                dataBufByteCount)) {
 	       fprintf(stderr, "ERROR: Encrypting plaintext to buffer ...\n");
 	       free(unencDataBuf);
 	       free(encDataBuf);
+	       free(dataHashBuf);
 	       return 4;
 	  }
-	  fprintf(stdout, "Writing encrypted buffer to file @ \"%s\" ...\n", runtimeOptions.outputDumpFilePath);
+	  fprintf(stdout, "Writing encrypted buffer to file @ \"%s\" ...\n", 
+	          runtimeOptions.outputDumpFilePath);
+	  dataBufByteCount += CRYPTO_UPLOAD_HEADER_SIZE;
+
 	  if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, encDataBuf, dataBufByteCount)) { 
                fprintf(stderr, "ERROR: Writing encrypted dump buffer back to file ...\n");
 	       free(unencDataBuf);
 	       free(encDataBuf);
+	       free(dataHashBuf);
 	       return 5;
 	  }
 	  fprintf(stdout, "DONE!\n");
 	  free(unencDataBuf); unencDataBuf = NULL;
 	  free(encDataBuf); encDataBuf = NULL;
-          ClearCipherObject(cipherObj);
+          free(dataHashBuf); dataHashBuf = NULL;
+	  ClearCipherObject(cipherObj);
 	  DeleteCipherObject(cipherObj);
      }
      else { // decrypt:
           int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
-	  if(!dataBufByteCount) { 
+	  if(!dataBufByteCount || dataBufByteCount <= CRYPTO_UPLOAD_HEADER_SIZE) { 
                fprintf(stderr, "ERROR: Reading input dump file \"%s\" ...\n", runtimeOptions.inputDumpFilePath);
 	       return 2;
 	  }
@@ -277,8 +305,7 @@ int main(int argc, char **argv) {
 							runtimeOptions.saltDataByteCount);
 	  uint8_t *unencDataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
 	  memcpy(unencDataBuf, encDataBuf, dataBufByteCount);
-	  if(!DecryptDataBuffer(cipherObj, unencDataBuf, encDataBuf, dataBufByteCount) || 
-	     memcmp(unencDataBuf, CRYPTO_UPLOAD_HEADER, CRYPTO_UPLOAD_HEADER_SIZE)) {
+	  if(!DecryptDataBuffer(cipherObj, unencDataBuf, encDataBuf, dataBufByteCount)) {
                uint8_t headerStr[CRYPTO_UPLOAD_HEADER_SIZE + 1];
 	       memcpy(headerStr, unencDataBuf, CRYPTO_UPLOAD_HEADER_SIZE);
 	       headerStr[CRYPTO_UPLOAD_HEADER_SIZE] = '\0';
@@ -286,17 +313,27 @@ int main(int argc, char **argv) {
 		       headerStr);
 	       free(unencDataBuf);
 	       free(encDataBuf);
-	       return 6;
+	       return 8;
 	  }
-          if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, unencDataBuf, dataBufByteCount)) { 
+	  dataBufByteCount -= CRYPTO_UPLOAD_HEADER_SIZE;
+	  uint8_t dataHashBuf[CRYPTO_UPLOAD_HEADER_SIZE];
+	  memcpy(dataHashBuf, unencDataBuf, CRYPTO_UPLOAD_HEADER_SIZE);
+ 	  if(!VerifyDataHash(dataHashBuf, unencDataBuf + CRYPTO_UPLOAD_HEADER_SIZE, dataBufByteCount)) {
+               fprintf(stderr, "ERROR: The verifiction hash on the unencrypted data does not match ...\n");
+	       free(unencDataBuf);
+	       free(encDataBuf);
+	       return 9;
+	  }
+	  else if(!WriteBufferToFile(runtimeOptions.outputDumpFilePath, 
+				     unencDataBuf + CRYPTO_UPLOAD_HEADER_SIZE, dataBufByteCount)) { 
                fprintf(stderr, "ERROR: Writing plaintext dump buffer back to file ...\n");
 	       free(unencDataBuf);
 	       free(encDataBuf);
 	       return 5;
 	  }
 	  fprintf(stdout, "DONE!\n");
-	  //free(unencDataBuf); unencDataBuf = NULL;
-	  //free(encDataBuf); encDataBuf = NULL;
+	  free(unencDataBuf); unencDataBuf = NULL;
+	  free(encDataBuf); encDataBuf = NULL;
           ClearCipherObject(cipherObj);
 	  DeleteCipherObject(cipherObj);
      }
@@ -369,7 +406,7 @@ bool WriteBufferToFile(const char *outputPath, uint8_t *fileBuffer, size_t bufBy
 #define HEXCHAR_TO_NIBBLE(x) ( (x) < 'A'  ? (x) - '0' : (x) - 'A' + 0x0A )
 #define VALID_HEXCHAR(x) (  ( (x) >= '0' && (x) <= '9' ) || ( (x) >= 'A' && (x) <= 'F' ) )
 
-size_t HexStringToBuffer(void* Buffer, size_t MaxBytes, const char* HexIn) {
+uint16_t HexStringToBuffer(void* Buffer, size_t MaxBytes, const char* HexIn) {
     uint8_t* ByteBuffer = (uint8_t*) Buffer;
     uint16_t ByteCount = 0;
 
@@ -416,3 +453,23 @@ Cipher_t PrepareBlockCipherObject(const uint8_t *keyData, size_t keyLength,
      return NULL;
 }
 
+bool VerifyDataHash(uint8_t *dataHashBytes, uint8_t *dataBytes, uint16_t dataByteCount) {
+     if(dataHashBytes == NULL || dataBytes == NULL) {
+          return false;
+     }
+     SHAHash_t *hasherObj = GetNewHasherObject();
+     uint8_t *actualDataHashBytes = ComputeHashBytes(hasherObj, dataBytes, dataByteCount);
+     if(actualDataHashBytes == NULL || GetHashByteCount(hasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
+          fprintf(stderr, "ERROR: Unable to verify actual decrypted data hash ...\n");
+	  if(actualDataHashBytes != NULL) {
+               free(actualDataHashBytes);
+	  }
+	  return false;
+     }
+     int hashCompareResult = memcmp(dataHashBytes, actualDataHashBytes, CRYPTO_UPLOAD_HEADER_SIZE);
+     free(actualDataHashBytes); actualDataHashBytes = NULL;
+     if(hashCompareResult) {
+          return false;
+     }
+     return true;
+}

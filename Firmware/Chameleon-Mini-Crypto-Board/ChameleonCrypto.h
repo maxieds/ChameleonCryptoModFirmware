@@ -26,9 +26,8 @@
 #define BLOCK_CIPHER_KEY_BYTE_SIZE      (128 / BITS_PER_BYTE)
 #define MAX_KEY_LENGTH            (BLOCK_CIPHER_KEY_BYTE_SIZE)
 
-#define CRYPTO_UPLOAD_HEADER      (CRYPTO_DUMP_HEADER_STRING)
-#define CRYPTO_UPLOAD_HEADER_SIZE (CRYPTO_DUMP_HEADER_BYTES)
-#define CRYPTO_UPLOAD_BUFSIZE     (1152) //(1265 + CRYPTO_UPLOAD_HEADER_SIZE) // for MF1K dump sizes
+#define CRYPTO_UPLOAD_HEADER_SIZE (32)
+#define CRYPTO_UPLOAD_BUFSIZE     (1152) 
 
 typedef AESCipher_t* Cipher_t;
 
@@ -47,6 +46,7 @@ extern uint16_t CryptoUploadBufferByteCount;
 
 /* Administrative checking and prep routines: */
 void InitCryptoDumpBuffer();
+bool VerifyDataHash(uint8_t *dataHashBytes, uint8_t *dataBytes, uint16_t dataByteCount);
 bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength);
 
 /* Key management: */
