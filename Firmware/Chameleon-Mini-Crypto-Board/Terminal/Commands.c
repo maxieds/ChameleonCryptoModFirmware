@@ -168,6 +168,18 @@ CommandStatusIdType CommandExecUploadStatus(char *OutMessage) {
      if(uploadStatus == UPLOAD_STATUS_ERROR_ID) { // reset to OK after checking this:
           XModemEncryptedUploadStatus = UPLOAD_STATUS_OK_ID;
      }
+     //char dataBuf[101];
+     //BufferToHexString(dataBuf, 101, CryptoUploadBuffer, 100);
+     //SHAHash_t * hasherObj = GetNewHasherObject();
+     //uint8_t *hashBytes = ComputeHashBytes(hasherObj, CryptoUploadBuffer + CRYPTO_UPLOAD_HEADER_SIZE, 
+     //		          CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
+     //size_t hashByteCount = GetHashByteCount(hasherObj);
+     //char hashStr[2 * hashByteCount + 1];
+     //BufferToHexString(hashStr, 2 * hashByteCount + 1, hashBytes, 
+     //		       CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
+     //DeleteHasherObject(hasherObj);
+     //free(hashBytes);
+     //snprintf(OutMessage, TERMINAL_BUFFER_SIZE, "%s", hashStr);
      return uploadStatus;
 }
 
@@ -720,6 +732,18 @@ CommandStatusIdType CommandExecParamDeviceAuth(char *OutMessage, const char *InP
      authPassphraseLen = numAuthedEditsStr - InParams;
      strncpy(authPassphrase, InParams, authPassphraseLen);
      authPassphrase[authPassphraseLen] = '\0';
+     
+     //SHAHash_t * hasherObj = GetNewHasherObject();
+     //size_t pphLen = strlen(authPassphrase);
+     //uint8_t *pphHashBytes = ComputeHashBytes(hasherObj, authPassphrase, authPassphraseLen);
+     //size_t pphHashByteCount = GetHashByteCount(hasherObj);
+     //char pphHashStr[2 * pphHashByteCount + 1];
+     //BufferToHexString(pphHashStr, 2 * pphHashByteCount + 1, pphHashBytes, pphHashByteCount);
+     //snprintf(OutMessage, TERMINAL_BUFFER_SIZE, "%s", pphHashStr);
+     //DeleteHasherObject(hasherObj);
+     //free(pphHashBytes);
+     //return COMMAND_INFO_OK_WITH_TEXT_ID;
+     
      if(!AuthLockByPassphrase(authPassphrase)) { 
           strncpy_P(OutMessage, PSTR("Incorrect authentication passphrase specified."), TERMINAL_BUFFER_SIZE);
 	  return COMMAND_ERR_AUTH_FAILED_ID;

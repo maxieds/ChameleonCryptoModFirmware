@@ -27,7 +27,7 @@
 #define MAX_KEY_LENGTH            (BLOCK_CIPHER_KEY_BYTE_SIZE)
 
 #define CRYPTO_UPLOAD_HEADER_SIZE (32)
-#define CRYPTO_UPLOAD_BUFSIZE     (1152) 
+#define CRYPTO_UPLOAD_BUFSIZE     (1024 + CRYPTO_UPLOAD_HEADER_SIZE) //(1152) 
 
 typedef AESCipher_t* Cipher_t;
 
@@ -43,11 +43,12 @@ typedef struct {
  */
 extern uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
 extern uint16_t CryptoUploadBufferByteCount;
+extern SHAHash_t *shaHasherObj;
 
 /* Administrative checking and prep routines: */
 void InitCryptoDumpBuffer();
 bool VerifyDataHash(uint8_t *dataHashBytes, uint8_t *dataBytes, uint16_t dataByteCount);
-bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength);
+bool ValidDumpImageHeader(uint8_t *dumpDataBuf, uint16_t bufLength);
 
 /* Key management: */
 bool SetKeyData(size_t keyIndex, uint8_t *keyData, size_t keyLength);

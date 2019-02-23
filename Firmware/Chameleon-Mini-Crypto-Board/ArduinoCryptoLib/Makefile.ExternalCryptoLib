@@ -5,9 +5,9 @@ LIBRARY = libAESCrypto.a
 
 LD=avr-g++
 CXX=avr-g++
-HOSTARCH_FLAGS=-mmcu=avrxmega7 -D__AVR_ATxmega128A4U__ -DHOST_BUILD -DNEED_LIBSTDCPP\
-	       -D__cplusplus
-CPPFLAGS = -Wl,--export-dynamic -O0 -Wl,--as-needed -I$(shell readlink -f .)
+HOSTARCH_FLAGS=-mmcu=avrxmega7 -D__AVR_ATxmega128A4U__ -DHOST_BUILD -DNEED_LIBSTDCPP
+CPPFLAGS = -Wl,--export-dynamic -O0 -Wl,--as-needed -nodefaultlibs -nostdlib \
+	   -I$(shell readlink -f .) #-lc -lm
 CXXFLAGS = -g -Wall $(CPPFLAGS) $(HOSTARCH_FLAGS)
 
 SOURCES = \

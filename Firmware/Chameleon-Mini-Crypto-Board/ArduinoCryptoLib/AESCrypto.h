@@ -28,6 +28,9 @@ bool EncryptDataBuffer(AESCipher_t *cipher, uint8_t *encryptedDataBuf,
 bool DecryptDataBuffer(AESCipher_t *cipher, uint8_t *ptextDataBuf, 
 		       uint8_t *encDataBuf, size_t dataBufByteCount);
 
+//extern volatile bool __CipherObjectMutex;
+//extern volatile AESCipher_t *__CipherObject;
+
 #ifdef __cplusplus
 }
 #endif

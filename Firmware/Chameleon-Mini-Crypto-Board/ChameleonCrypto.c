@@ -9,7 +9,6 @@
 #include <util/crc16.h>
 
 #include <AESCrypto.h>
-#include <SHAHash.h>
 
 #include "ChameleonCrypto.h"
 #include "Settings.h"
@@ -21,6 +20,7 @@
 
 uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
 uint16_t CryptoUploadBufferByteCount;
+SHAHash_t *shaHasherObj;
 
 void InitCryptoDumpBuffer() { 
      memset(CryptoUploadBuffer, 0, CRYPTO_UPLOAD_BUFSIZE);
@@ -34,29 +34,29 @@ bool VerifyDataHash(uint8_t *dataHashBytes, uint8_t *dataBytes, uint16_t dataByt
      SHAHash_t *hasherObj = GetNewHasherObject();
      uint8_t *actualDataHashBytes = ComputeHashBytes(hasherObj, dataBytes, dataByteCount);
      if(actualDataHashBytes == NULL || GetHashByteCount(hasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
-          fprintf(stderr, "ERROR: Unable to verify actual decrypted data hash ...\n");
 	  if(actualDataHashBytes != NULL) {
                free(actualDataHashBytes);
 	  }
 	  return false;
      }
      int hashCompareResult = memcmp(dataHashBytes, actualDataHashBytes, CRYPTO_UPLOAD_HEADER_SIZE);
+     DeleteHasherObject(hasherObj);
      free(actualDataHashBytes); actualDataHashBytes = NULL;
+     //return true;
      if(hashCompareResult) {
           return false;
      }
      return true;
 }
 
-bool ValidDumpImageHeader(uint8_t *dumpDataBuf, size_t bufLength) { 
-     if(!bufLength || bufLength <= CRYPTO_UPLOAD_HEADER_SIZE || dumpDataBuf == NULL) { 
+bool ValidDumpImageHeader(uint8_t *dumpDataBuf, uint16_t bufLength) { 
+     if(!bufLength || bufLength < CRYPTO_UPLOAD_HEADER_SIZE || dumpDataBuf == NULL) { 
           return false;
      }
-     bufLength -= CRYPTO_UPLOAD_HEADER_SIZE;
      uint8_t dataHeaderBytes[CRYPTO_UPLOAD_HEADER_SIZE];
      memcpy(dataHeaderBytes, dumpDataBuf, CRYPTO_UPLOAD_HEADER_SIZE);
-     dumpDataBuf += CRYPTO_UPLOAD_HEADER_SIZE;
-     if(!VerifyDataHash(dataHeaderBytes, dumpDataBuf, bufLength)) {
+     if(!VerifyDataHash(dataHeaderBytes, dumpDataBuf + CRYPTO_UPLOAD_HEADER_SIZE, 
+			bufLength - CRYPTO_UPLOAD_HEADER_SIZE)) {
           return false;
      }
      return true;
@@ -156,8 +156,10 @@ uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *ivSaltBytes, uint1
      }
      uint8_t *plaintextBuf = CryptoUploadBuffer; 
      if(!DecryptDataBuffer(cipherObj, plaintextBuf, byteBuf, byteBufLen)) {
+          DeleteCipherObject(cipherObj);
           return NULL;
      }
+     DeleteCipherObject(cipherObj);
      return plaintextBuf;
 }
 

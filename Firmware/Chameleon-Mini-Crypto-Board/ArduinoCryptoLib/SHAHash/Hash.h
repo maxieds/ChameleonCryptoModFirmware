@@ -26,6 +26,8 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+typedef uint16_t HashSize_t;
+
 class Hash
 {
 public:
@@ -36,8 +38,8 @@ public:
     virtual size_t blockSize() const = 0;
 
     virtual void reset() = 0;
-    virtual void update(const void *data, size_t len) = 0;
-    virtual void finalize(void *hash, size_t len) = 0;
+    virtual void update(const void *data, HashSize_t len) = 0;
+    virtual void finalize(void *hash, HashSize_t len) = 0;
 
     virtual void clear() = 0;
 

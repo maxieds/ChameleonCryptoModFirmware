@@ -6,11 +6,11 @@
 #include "ChipLocking.h"
 #include <SHAHash.h>
 
-#if defined(CHAMBOARD_LOCKDOWN)
-     LOCKBITS = 0x00;
-#else
-     LOCKBITS = 0xff;
-#endif
+//#if defined(CHAMBOARD_LOCKDOWN)
+//     LOCKBITS = 0x00;
+//#else
+//     LOCKBITS = 0xff;
+//#endif
 
 int PassphraseHashCompare(const char *passphrase, const char *storedHashString) { 
      if(passphrase == NULL || storedHashString == NULL) {
@@ -24,7 +24,7 @@ int PassphraseHashCompare(const char *passphrase, const char *storedHashString) 
      BufferToHexString(pphHashStr, 2 * pphHashByteCount + 1, pphHashBytes, pphHashByteCount);
      int compResult = strncmp(pphHashStr, storedHashString, MIN(storedHashStrLen, pphHashByteCount));
      free(pphHashBytes); pphHashBytes = NULL;
-     ClearHashInitData(hasherObj);
+     //ClearHashInitData(hasherObj);
      DeleteHasherObject(hasherObj);
      return compResult;
 }

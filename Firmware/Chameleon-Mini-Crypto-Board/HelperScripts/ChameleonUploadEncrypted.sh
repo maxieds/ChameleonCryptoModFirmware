@@ -35,7 +35,7 @@ $SZCMD -b -vvv -X $DUMP_IMAGE < $CHAMELEON_DEV > $CHAMELEON_DEV
 #echo -ne "\x04" > $CHAMELEON_DEV;
 #sleep 2;
 
-#read -t 0 NoVar < $CHAMELEON_DEV;
+read -t 0 NoVar < $CHAMELEON_DEV;
 #sleep 3;
 #echo -en "UPLOAD_STATUS\r" > $CHAMELEON_DEV;
 #read NoVar < $CHAMELEON_DEV;

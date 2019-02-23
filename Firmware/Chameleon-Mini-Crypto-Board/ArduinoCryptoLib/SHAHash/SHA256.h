@@ -35,8 +35,8 @@ public:
     size_t blockSize() const;
 
     void reset();
-    void update(const void *data, size_t len);
-    void finalize(void *hash, size_t len);
+    void update(const void *data, HashSize_t len) override;
+    void finalize(void *hash, HashSize_t len) override;
 
     void clear();
 

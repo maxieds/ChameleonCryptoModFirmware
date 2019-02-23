@@ -20,9 +20,4 @@
      typedef CFB<AES128> AESCipher_t;
 #endif
 
-#include <stddef.h>
-
-extern bool cipherObjectMutex;
-extern uint8_t cipherObjectBytes[AES_CIPHERT_SIZE];
-
 #endif

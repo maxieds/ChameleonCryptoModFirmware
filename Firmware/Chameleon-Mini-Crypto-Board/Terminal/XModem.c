@@ -277,12 +277,11 @@ void XModemTick(void)
 	    Cipher_t decryptCipher = PrepareBlockCipherObjectFromKeyIndex(
 		LocalKeyIndex, LocalIVSaltData, LocalIVSaltDataByteCount
 	    );
-	    uint8_t *ptextBuf = DecryptDumpImage(decryptCipher, 
-	    		                         LocalIVSaltData, LocalIVSaltDataByteCount, 
-	    				         CryptoUploadBuffer, CryptoUploadBufferByteCount);
-	    if(ptextBuf != NULL && CryptoUploadBufferByteCount >= CRYPTO_UPLOAD_HEADER_SIZE && 
-	       ValidDumpImageHeader(ptextBuf, CryptoUploadBufferByteCount)) { 
-		MemoryUploadBlock((void *) (ptextBuf + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
+	    DecryptDumpImage(decryptCipher, LocalIVSaltData, LocalIVSaltDataByteCount, 
+	    		     CryptoUploadBuffer, CryptoUploadBufferByteCount);
+	    if(CryptoUploadBufferByteCount > CRYPTO_UPLOAD_HEADER_SIZE && 
+	       ValidDumpImageHeader(CryptoUploadBuffer, CryptoUploadBufferByteCount)) { 
+		MemoryUploadBlock((void *) (CryptoUploadBuffer + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
 				  CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
 		operationStatus = true;
 	    }

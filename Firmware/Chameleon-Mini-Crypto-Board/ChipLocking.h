@@ -33,7 +33,7 @@ INLINE bool AuthLockByPassphrase(const char *authPwd) {
 
 INLINE void ConfigureBootTimeProtections(void) {
      // disable JTAG interface in software:
-     MCU_MCUCR = (1 << MCU_JTAGUID);
+     //MCU_MCUCR = (1 << MCU_JTAGUID);
 }
 
 #endif

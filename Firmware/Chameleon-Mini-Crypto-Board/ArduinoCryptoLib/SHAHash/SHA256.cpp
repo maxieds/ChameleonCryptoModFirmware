@@ -77,7 +77,7 @@ void SHA256::reset()
     state.length = 0;
 }
 
-void SHA256::update(const void *data, size_t len)
+void SHA256::update(const void *data, HashSize_t len)
 {
     // Update the total length (in bits, not bytes).
     state.length += ((uint64_t)len) << 3;
@@ -99,7 +99,7 @@ void SHA256::update(const void *data, size_t len)
     }
 }
 
-void SHA256::finalize(void *hash, size_t len)
+void SHA256::finalize(void *hash, HashSize_t len)
 {
     // Pad the last chunk.  We may need two padding chunks if there
     // isn't enough room in the first for the padding and length.

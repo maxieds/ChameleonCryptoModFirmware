@@ -14,15 +14,24 @@
 extern "C" {
 #endif
 
+#define SHAHASHT_SIZE                        (120)
+
 typedef struct SHA256 SHAHash_t;
+//#if !defined(__cplusplus)
+//     typedef struct SHA256 SHAHash_t;
+//#else
+//     #include <SHAHash/SHA256.h>
+//     typedef SHA256 SHAHash_t;
+//#endif
 
 SHAHash_t * GetNewHasherObject();
 void DeleteHasherObject(SHAHash_t *hasherObj);
-uint8_t * ComputeHashBytesWithHMAC(SHAHash_t *hasherObj, const uint8_t *saltData, size_t saltBytesLength, 
-		                   const uint8_t *dataBytes, size_t dataByteCount);
-uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *dataBytes, size_t dataByteCount);
+uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *dataBytes, uint16_t dataByteCount);
 size_t GetHashByteCount(SHAHash_t *hasherObj);
 void ClearHashInitData(SHAHash_t *hasherObj);
+
+//extern volatile bool __SHAHasherObjectMutex;
+//extern SHAHash_t *__SHAHasherObject;
 
 #ifdef __cplusplus
 }
