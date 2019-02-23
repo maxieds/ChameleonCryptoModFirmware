@@ -25,6 +25,7 @@ typedef AESCipher_t * Cipher_t;
 static const size_t BITS_PER_BYTE = 8;
 
 #define CRYPTO_UPLOAD_HEADER_SIZE    (32)
+#define MF1K_MAX_DUMP_SIZE           (1024)
 #define XMODEM_BLOCK_SIZE            (128)
 
 #define MIN(x, y)                    ((x) >= (y) ? (y) : (x))
@@ -95,8 +96,8 @@ class UtilityExecData_t {
 
 #define MIN(x, y)                    ((x) >= (y) ? (y) : (x))
 
-int GetFileBytes(const char *filePath);
-int LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, int maxBytesToRead);
+uint16_t GetFileBytes(const char *filePath);
+uint16_t LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, uint16_t maxBytesToRead);
 bool WriteBufferToFile(const char *outputPath, uint8_t *fileBuffer, size_t bufByteCount);
 
 uint16_t BufferToHexString(char *HexOut, uint16_t MaxChars, const void *Buffer, uint16_t ByteCount);
@@ -216,6 +217,21 @@ int main(int argc, char **argv) {
      //LoadFileIntoBuffer(runtimeOptions.inputDumpFilePath, dataBuf, dataBufByteCount);
      //WriteBufferToFile(runtimeOptions.outputDumpFilePath, dataBuf, dataBufByteCount);
      //return 0;
+     SHAHash_t *pphHasherObj = GetNewHasherObject();
+     uint8_t *pphHashBuf = ComputeHashBytes(pphHasherObj, (uint8_t *) "MyFlashLockPwd11", 
+			                    strlen("MyFlashLockPwd11"));
+     if(pphHashBuf == NULL || GetHashByteCount(pphHasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
+               fprintf(stderr, "ERROR: Unable to compute valid hash for the input file ...\n");
+	       if(pphHashBuf != NULL) {
+	            free(pphHashBuf);
+	       }
+	       return 7;
+     }
+     char pphHashStr[2 * CRYPTO_UPLOAD_HEADER_SIZE + 1]; 
+     BufferToHexString(pphHashStr, 2 * CRYPTO_UPLOAD_HEADER_SIZE + 1, pphHashBuf, CRYPTO_UPLOAD_HEADER_SIZE);
+     fprintf(stdout, "PPH data hash:     %s\n", pphHashStr);
+     DeleteHasherObject(pphHasherObj);
+     free(pphHashBuf);
 
      if(runtimeOptions.dumpFileOperation == OPERATION_ENCRYPT) { 
           int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
@@ -224,11 +240,11 @@ int main(int argc, char **argv) {
 		       runtimeOptions.inputDumpFilePath);
 	       return 2;
 	  }
-	  //else if((dataBufByteCount + CRYPTO_UPLOAD_HEADER_SIZE) % XMODEM_BLOCK_SIZE) {
-	  //     fprintf(stderr, "ERROR: The file size %d is not a multiple of %d ...\n", 
-	  //	       dataBufByteCount, XMODEM_BLOCK_SIZE);
-	  //     return 6;
-	  //}
+	  else if(dataBufByteCount > MF1K_MAX_DUMP_SIZE) {
+	       fprintf(stderr, "ERROR: The file size %d is too large (must be <= %d) ...\n", 
+	  	       dataBufByteCount, MF1K_MAX_DUMP_SIZE);
+	       return 6;
+	  }
 	  uint8_t *unencDataBuf = (uint8_t *) malloc((dataBufByteCount + CRYPTO_UPLOAD_HEADER_SIZE) * 
 			                             sizeof(uint8_t));
 	  int actualByteCount = 0;
@@ -351,7 +367,7 @@ int main(int argc, char **argv) {
 
 }
 
-int GetFileBytes(const char *filePath) { 
+uint16_t GetFileBytes(const char *filePath) { 
      struct stat statStructBuf;
      int statSuccessCode = stat(filePath, &statStructBuf);
      if(statSuccessCode == 0) { 
@@ -360,7 +376,7 @@ int GetFileBytes(const char *filePath) {
      return 0;
 }
 
-int LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, int maxBytesToRead) { 
+uint16_t LoadFileIntoBuffer(const char *filePath, uint8_t *contentsBuffer, uint16_t maxBytesToRead) { 
      int fpInputBuffer = open(filePath, O_RDONLY | O_NONBLOCK, 0);
      if(fpInputBuffer == -1) { 
           perror("LoadFileIntoBuffer: Opening file ");

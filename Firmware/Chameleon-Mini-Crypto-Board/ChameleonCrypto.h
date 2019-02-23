@@ -24,10 +24,11 @@
      #define NUM_KEYS_STORAGE          (4)
 #endif
 #define BLOCK_CIPHER_KEY_BYTE_SIZE      (128 / BITS_PER_BYTE)
-#define MAX_KEY_LENGTH            (BLOCK_CIPHER_KEY_BYTE_SIZE)
+#define MAX_KEY_LENGTH                  (BLOCK_CIPHER_KEY_BYTE_SIZE)
+#define MF1K_MAX_DUMP_SIZE              (1024)
 
 #define CRYPTO_UPLOAD_HEADER_SIZE (32)
-#define CRYPTO_UPLOAD_BUFSIZE     (1024 + CRYPTO_UPLOAD_HEADER_SIZE) //(1152) 
+#define CRYPTO_UPLOAD_BUFSIZE     (MF1K_MAX_DUMP_SIZE + CRYPTO_UPLOAD_HEADER_SIZE) //(1152) 
 
 typedef AESCipher_t* Cipher_t;
 
@@ -42,8 +43,7 @@ typedef struct {
  * variables, we carve out a special one-time placeholder for this buffer data in the EEPROM segment: 
  */
 extern uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
-extern uint16_t CryptoUploadBufferByteCount;
-extern SHAHash_t *shaHasherObj;
+extern size_t CryptoUploadBufferByteCount;
 
 /* Administrative checking and prep routines: */
 void InitCryptoDumpBuffer();

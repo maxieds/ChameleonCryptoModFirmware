@@ -19,8 +19,7 @@
 #include "LEDHook.h"
 
 uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
-uint16_t CryptoUploadBufferByteCount;
-SHAHash_t *shaHasherObj;
+size_t CryptoUploadBufferByteCount;
 
 void InitCryptoDumpBuffer() { 
      memset(CryptoUploadBuffer, 0, CRYPTO_UPLOAD_BUFSIZE);

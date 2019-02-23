@@ -12,9 +12,9 @@ fi
 
 CRYPTO_HEADER_SIZE=32;
 XMODEM_BLOCK_SIZE=128;
-LOCAL_ENCDEC_UTIL=`[[ -e "ChameleonCryptoUtils/UtilityBin/EncodeDump" ]] && \
-	echo "ChameleonCryptoUtils/UtilityBin/EncodeDump" || \
-	echo "../ChameleonCryptoUtils/UtilityBin/EncodeDump"`;
+LOCAL_ENCDEC_UTIL=`[[ -e "UtilBin/EncodeDump" ]] && \
+	echo "UtilBin/EncodeDump" || \
+	echo "../UtilBin/EncodeDump"`;
 
 INPUT_DUMP_IMAGE=$1;
 KEY_DATA=`[[ -z "$2" ]] && echo "1234567890ABCDEF1234567890ABCDEF" || echo $2`;

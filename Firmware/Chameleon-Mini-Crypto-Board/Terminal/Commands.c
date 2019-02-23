@@ -168,18 +168,21 @@ CommandStatusIdType CommandExecUploadStatus(char *OutMessage) {
      if(uploadStatus == UPLOAD_STATUS_ERROR_ID) { // reset to OK after checking this:
           XModemEncryptedUploadStatus = UPLOAD_STATUS_OK_ID;
      }
-     //char dataBuf[101];
-     //BufferToHexString(dataBuf, 101, CryptoUploadBuffer, 100);
+     char dataBuf[51];
+     BufferToHexString(dataBuf, 51, CryptoUploadBuffer + (CryptoUploadBufferByteCount - 25), 25);
      //SHAHash_t * hasherObj = GetNewHasherObject();
      //uint8_t *hashBytes = ComputeHashBytes(hasherObj, CryptoUploadBuffer + CRYPTO_UPLOAD_HEADER_SIZE, 
      //		          CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
      //size_t hashByteCount = GetHashByteCount(hasherObj);
      //char hashStr[2 * hashByteCount + 1];
      //BufferToHexString(hashStr, 2 * hashByteCount + 1, hashBytes, 
-     //		       CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
+     //		       CRYPTO_UPLOAD_HEADER_SIZE);
      //DeleteHasherObject(hasherObj);
      //free(hashBytes);
-     //snprintf(OutMessage, TERMINAL_BUFFER_SIZE, "%s", hashStr);
+     uint8_t *ptrBase = CryptoUploadBuffer, *ptrExt = CryptoUploadBuffer + (CryptoUploadBufferByteCount - 50);
+     snprintf(OutMessage, TERMINAL_BUFFER_SIZE, "%%s::%p/%p/%d/%d", dataBuf, ptrBase, ptrExt, 
+     	      ptrExt - ptrBase, CryptoUploadBufferByteCount);
+     //snprintf(OutMessage, TERMINAL_BUFFER_SIZE, "%s::%d", dataBuf, CryptoUploadBufferByteCount);
      return uploadStatus;
 }
 
