@@ -30,8 +30,8 @@ uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *dataBytes, uint1
 size_t GetHashByteCount(SHAHash_t *hasherObj);
 void ClearHashInitData(SHAHash_t *hasherObj);
 
-//extern volatile bool __SHAHasherObjectMutex;
-//extern SHAHash_t *__SHAHasherObject;
+extern volatile bool __SHAHasherObjectMutex;
+extern SHAHash_t *__SHAHasherObject;
 
 #ifdef __cplusplus
 }

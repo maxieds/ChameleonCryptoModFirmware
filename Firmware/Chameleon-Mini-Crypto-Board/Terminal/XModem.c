@@ -284,6 +284,7 @@ void XModemTick(void)
 		MemoryUploadBlock((void *) (CryptoUploadBuffer + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
 				  CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
 		operationStatus = true;
+		SystemReset();
 	    }
 	    // cleanup data and free unused buffers:
 	    DecryptDumpAfterUpload = false;

@@ -6,29 +6,25 @@
 #include "SHAHash/SHA256.h"
 #include "SHAHash.h"
 
-//volatile bool __SHAHasherObjectMutex = false;
-//SHAHash_t *__SHAHasherObject = NULL;
-//static SHAHash_t __LocalSHAHasherObject;
+volatile bool __SHAHasherObjectMutex = false;
+SHAHash_t *__SHAHasherObject = NULL;
 
 SHAHash_t * GetNewHasherObject() {
-     //return (SHAHash_t *) malloc(SHAHASHT_SIZE);
-     return new SHAHash_t();
-     /*if(__SHAHasherObject == NULL) {
-          __SHAHasherObject = &__LocalSHAHasherObject; //new SHAHash_t();
+     if(__SHAHasherObject == NULL) {
+          __SHAHasherObject = new SHAHash_t();
      }
      if(__SHAHasherObjectMutex) {
           return NULL;
      }
      __SHAHasherObjectMutex = true;
-     return __SHAHasherObject;*/
+     return __SHAHasherObject;
 }
 
 void DeleteHasherObject(SHAHash_t *hasherObj) { 
      if(hasherObj != NULL) { 
           free(hasherObj);
-          //delete hasherObj;
      }
-     //__SHAHasherObjectMutex = false;
+     __SHAHasherObjectMutex = false;
 }
 
 uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *dataBytes, uint16_t dataByteCount) {
