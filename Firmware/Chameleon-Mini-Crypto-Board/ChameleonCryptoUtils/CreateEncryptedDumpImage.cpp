@@ -210,28 +210,28 @@ int main(int argc, char **argv) {
 	  return -2;
      }
      
-     fprintf(stdout, "sizeof(AESCipher_t) = %d\n", sizeof(AESCipher_t));
+     //fprintf(stdout, "sizeof(AESCipher_t) = %d\n", sizeof(AESCipher_t));
      //fprintf(stdout, "sizeof(SHAHash_t) = %d\n", sizeof(SHAHash_t));
      //int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
      //uint8_t *dataBuf = (uint8_t *) malloc(dataBufByteCount * sizeof(uint8_t));
      //LoadFileIntoBuffer(runtimeOptions.inputDumpFilePath, dataBuf, dataBufByteCount);
      //WriteBufferToFile(runtimeOptions.outputDumpFilePath, dataBuf, dataBufByteCount);
      //return 0;
-     SHAHash_t *pphHasherObj = GetNewHasherObject();
-     uint8_t *pphHashBuf = ComputeHashBytes(pphHasherObj, (uint8_t *) "MyFlashLockPwd11", 
-			                    strlen("MyFlashLockPwd11"));
-     if(pphHashBuf == NULL || GetHashByteCount(pphHasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
-               fprintf(stderr, "ERROR: Unable to compute valid hash for the input file ...\n");
-	       if(pphHashBuf != NULL) {
-	            free(pphHashBuf);
-	       }
-	       return 7;
-     }
-     char pphHashStr[2 * CRYPTO_UPLOAD_HEADER_SIZE + 1]; 
-     BufferToHexString(pphHashStr, 2 * CRYPTO_UPLOAD_HEADER_SIZE + 1, pphHashBuf, CRYPTO_UPLOAD_HEADER_SIZE);
-     fprintf(stdout, "PPH data hash:     %s\n", pphHashStr);
-     DeleteHasherObject(pphHasherObj);
-     free(pphHashBuf);
+     //SHAHash_t *pphHasherObj = GetNewHasherObject();
+     //uint8_t *pphHashBuf = ComputeHashBytes(pphHasherObj, (uint8_t *) "MyFlashLockPwd11", 
+     //			                    strlen("MyFlashLockPwd11"));
+     //if(pphHashBuf == NULL || GetHashByteCount(pphHasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
+     //          fprintf(stderr, "ERROR: Unable to compute valid hash for the input file ...\n");
+     //	       if(pphHashBuf != NULL) {
+     //	            free(pphHashBuf);
+     //	       }
+     //	       return 7;
+     //}
+     //char pphHashStr[2 * CRYPTO_UPLOAD_HEADER_SIZE + 1]; 
+     //BufferToHexString(pphHashStr, 2 * CRYPTO_UPLOAD_HEADER_SIZE + 1, pphHashBuf, CRYPTO_UPLOAD_HEADER_SIZE);
+     //fprintf(stdout, "PPH data hash:     %s\n", pphHashStr);
+     //DeleteHasherObject(pphHasherObj);
+     //free(pphHashBuf);
 
      if(runtimeOptions.dumpFileOperation == OPERATION_ENCRYPT) { 
           int dataBufByteCount = GetFileBytes(runtimeOptions.inputDumpFilePath);
@@ -257,14 +257,13 @@ int main(int argc, char **argv) {
 	       return 3;
 	  }
 	  SHAHash_t *hasherObj = GetNewHasherObject();
-          uint8_t *dataHashBuf = ComputeHashBytes(hasherObj, unencDataBuf + CRYPTO_UPLOAD_HEADER_SIZE, 
-			                          dataBufByteCount);
-	  if(dataHashBuf == NULL || GetHashByteCount(hasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
+          uint16_t hashDataSize = GetHashByteCount(hasherObj);
+	  uint8_t dataHashBuf[hashDataSize];
+	  ComputeHashBytes(hasherObj, dataHashBuf, hashDataSize, 
+			   unencDataBuf + CRYPTO_UPLOAD_HEADER_SIZE, dataBufByteCount);
+	  if(hashDataSize != CRYPTO_UPLOAD_HEADER_SIZE) {
                fprintf(stderr, "ERROR: Unable to compute valid hash for the input file ...\n");
 	       free(unencDataBuf);
-	       if(dataHashBuf != NULL) {
-	            free(dataHashBuf);
-	       }
 	       return 7;
 	  }
 	  char hashStr[2 * CRYPTO_UPLOAD_HEADER_SIZE + 1];
@@ -305,7 +304,6 @@ int main(int argc, char **argv) {
 	  fprintf(stdout, "DONE!\n");
 	  free(unencDataBuf); unencDataBuf = NULL;
 	  free(encDataBuf); encDataBuf = NULL;
-          free(dataHashBuf); dataHashBuf = NULL;
 	  ClearCipherObject(cipherObj);
 	  DeleteCipherObject(cipherObj);
      }
@@ -507,12 +505,12 @@ bool VerifyDataHash(uint8_t *dataHashBytes, uint8_t *dataBytes, uint16_t dataByt
           return false;
      }
      SHAHash_t *hasherObj = GetNewHasherObject();
-     uint8_t *actualDataHashBytes = ComputeHashBytes(hasherObj, dataBytes, dataByteCount);
-     if(actualDataHashBytes == NULL || GetHashByteCount(hasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
+     uint16_t hashDataSize = GetHashByteCount(hasherObj);
+     uint8_t actualDataHashBytes[hashDataSize];
+     ComputeHashBytes(hasherObj, actualDataHashBytes, hashDataSize, dataBytes, dataByteCount);
+     if(hashDataSize != CRYPTO_UPLOAD_HEADER_SIZE) {
           fprintf(stderr, "ERROR: Unable to verify actual decrypted data hash ...\n");
-	  if(actualDataHashBytes != NULL) {
-               free(actualDataHashBytes);
-	  }
+	  DeleteHasherObject(hasherObj);
 	  return false;
      }
      char actualHashStr[2 * CRYPTO_UPLOAD_HEADER_SIZE + 1];
@@ -521,7 +519,6 @@ bool VerifyDataHash(uint8_t *dataHashBytes, uint8_t *dataBytes, uint16_t dataByt
      fprintf(stdout, "Actual Hash Bytes: %s\n", actualHashStr);
      int hashCompareResult = memcmp(dataHashBytes, actualDataHashBytes, CRYPTO_UPLOAD_HEADER_SIZE);
      DeleteHasherObject(hasherObj);
-     free(actualDataHashBytes); actualDataHashBytes = NULL;
      if(hashCompareResult) {
           return false;
      }

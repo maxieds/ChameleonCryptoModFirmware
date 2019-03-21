@@ -31,17 +31,14 @@ bool VerifyDataHash(uint8_t *dataHashBytes, uint8_t *dataBytes, uint16_t dataByt
           return false;
      }
      SHAHash_t *hasherObj = GetNewHasherObject();
-     uint8_t *actualDataHashBytes = ComputeHashBytes(hasherObj, dataBytes, dataByteCount);
-     if(actualDataHashBytes == NULL || GetHashByteCount(hasherObj) != CRYPTO_UPLOAD_HEADER_SIZE) {
-	  if(actualDataHashBytes != NULL) {
-               free(actualDataHashBytes);
-	  }
+     uint16_t hashDataSize = GetHashByteCount(hasherObj);
+     uint8_t actualDataHashBytes[hashDataSize];
+     ComputeHashBytes(hasherObj, actualDataHashBytes, hashDataSize, dataBytes, dataByteCount);
+     if(hashDataSize != CRYPTO_UPLOAD_HEADER_SIZE) {
 	  return false;
      }
      int hashCompareResult = memcmp(dataHashBytes, actualDataHashBytes, CRYPTO_UPLOAD_HEADER_SIZE);
      DeleteHasherObject(hasherObj);
-     free(actualDataHashBytes); actualDataHashBytes = NULL;
-     //return true;
      if(hashCompareResult) {
           return false;
      }
@@ -78,10 +75,9 @@ bool ZeroFillKeyData(size_t keyIndex, size_t keyLength) {
 	keyLength > MAX_KEY_LENGTH) {
           return false;
      }
-     uint8_t *zeroBuf = (uint8_t *) malloc(keyLength * sizeof(uint8_t));
+     uint8_t zeroBuf[keyLength];
      memset(zeroBuf, 0, keyLength);
      bool success = SetKeyData(keyIndex, zeroBuf, keyLength);
-     free(zeroBuf);
      return success;
 }
 
@@ -103,19 +99,13 @@ bool PassphraseToAESKeyData(size_t keyIndex, const char *passphrase) {
      uint8_t *pphBytes = (uint8_t *) passphrase;
      uint8_t pphByteCount = strlen(passphrase);
      SHAHash_t *hasherObj = GetNewHasherObject();
-     uint8_t *firstRoundHashBytes = ComputeHashBytes(hasherObj, pphBytes, pphByteCount);
-     size_t frhbCount = GetHashByteCount(hasherObj);
-     uint8_t *keyData = ComputeHashBytes(hasherObj, firstRoundHashBytes, frhbCount);
-     size_t keyDataSize = GetHashByteCount(hasherObj);
+     uint16_t hashDataBytes = GetHashByteCount(hasherObj);
+     uint8_t firstRoundHashBytes[hashDataBytes], keyData[hashDataBytes];
+     ComputeHashBytes(hasherObj, firstRoundHashBytes, hashDataBytes, pphBytes, pphByteCount);
+     ComputeHashBytes(hasherObj, keyData, hashDataBytes, firstRoundHashBytes, hashDataBytes);
      ClearHashInitData(hasherObj);
      DeleteHasherObject(hasherObj);
-     if(firstRoundHashBytes != NULL) {
-          free(firstRoundHashBytes);
-     }
-     bool setStatus = SetKeyData(keyIndex, keyData, MIN(keyDataSize, MAX_KEY_LENGTH));
-     if(keyData != NULL) { 
-          free(keyData);
-     }
+     bool setStatus = SetKeyData(keyIndex, keyData, MIN(hashDataBytes, MAX_KEY_LENGTH));
      return setStatus;
 }
 

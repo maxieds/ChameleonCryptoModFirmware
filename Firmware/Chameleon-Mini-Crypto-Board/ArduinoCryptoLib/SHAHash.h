@@ -26,12 +26,13 @@ typedef struct SHA256 SHAHash_t;
 
 SHAHash_t * GetNewHasherObject();
 void DeleteHasherObject(SHAHash_t *hasherObj);
-uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *dataBytes, uint16_t dataByteCount);
+uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, uint8_t *hashData, uint16_t hashDataSize, 
+		           const uint8_t *dataBytes, uint16_t dataByteCount);
 size_t GetHashByteCount(SHAHash_t *hasherObj);
 void ClearHashInitData(SHAHash_t *hasherObj);
 
 extern volatile bool __SHAHasherObjectMutex;
-extern SHAHash_t *__SHAHasherObject;
+extern SHAHash_t __SHAHasherObject;
 
 #ifdef __cplusplus
 }

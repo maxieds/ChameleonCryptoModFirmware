@@ -18,13 +18,12 @@ int PassphraseHashCompare(const char *passphrase, const char *storedHashString) 
      }
      SHAHash_t * hasherObj = GetNewHasherObject();
      size_t storedHashStrLen = strlen(storedHashString), pphLen = strlen(passphrase);
-     uint8_t *pphHashBytes = ComputeHashBytes(hasherObj, passphrase, pphLen);
-     size_t pphHashByteCount = GetHashByteCount(hasherObj);
-     char pphHashStr[2 * pphHashByteCount + 1];
-     BufferToHexString(pphHashStr, 2 * pphHashByteCount + 1, pphHashBytes, pphHashByteCount);
-     int compResult = strncmp(pphHashStr, storedHashString, MIN(storedHashStrLen, pphHashByteCount));
-     free(pphHashBytes); pphHashBytes = NULL;
-     //ClearHashInitData(hasherObj);
+     uint16_t hashDataBytes = GetHashByteCount(hasherObj);
+     uint8_t pphHashBytes[hashDataBytes];
+     ComputeHashBytes(hasherObj, pphHashBytes, hashDataBytes, passphrase, pphLen);
+     char pphHashStr[2 * hashDataBytes + 1];
+     BufferToHexString(pphHashStr, 2 * hashDataBytes + 1, pphHashBytes, hashDataBytes);
+     int compResult = strncmp(pphHashStr, storedHashString, MIN(storedHashStrLen, hashDataBytes));
      DeleteHasherObject(hasherObj);
      return compResult;
 }

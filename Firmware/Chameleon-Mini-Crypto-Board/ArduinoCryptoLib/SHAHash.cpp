@@ -7,28 +7,30 @@
 #include "SHAHash.h"
 
 volatile bool __SHAHasherObjectMutex = false;
-SHAHash_t *__SHAHasherObject = NULL;
+SHAHash_t __SHAHasherObject;
 
 SHAHash_t * GetNewHasherObject() {
-     if(__SHAHasherObject == NULL) {
-          __SHAHasherObject = new SHAHash_t();
-     }
+     //if(__SHAHasherObject == NULL) {
+     //     __SHAHasherObject = new SHAHash_t();
+     //}
      if(__SHAHasherObjectMutex) {
           return NULL;
      }
      __SHAHasherObjectMutex = true;
-     return __SHAHasherObject;
+     return &__SHAHasherObject;
 }
 
 void DeleteHasherObject(SHAHash_t *hasherObj) { 
-     if(hasherObj != NULL) { 
-          free(hasherObj);
-     }
+     //if(hasherObj != NULL) { 
+     //     free(hasherObj);
+     //}
      __SHAHasherObjectMutex = false;
 }
 
-uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *dataBytes, uint16_t dataByteCount) {
-     if(hasherObj == NULL || dataBytes == NULL) {
+uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, uint8_t *hashData, 
+		           uint16_t hashDataSize, 
+		           const uint8_t *dataBytes, uint16_t dataByteCount) {
+     if(hasherObj == NULL || hashData == NULL || dataBytes == NULL) {
           return NULL;
      }
      //hasherObj->clear();
@@ -40,8 +42,8 @@ uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, const uint8_t *dataBytes, uint1
           hasherObj->update(dataBytes + r * roundSize, curRoundProcessSize);
      }*/
      hasherObj->update(dataBytes, dataByteCount);
-     uint16_t hashDataSize = GetHashByteCount(hasherObj);
-     uint8_t *hashData = (uint8_t *) malloc(hashDataSize * sizeof(uint8_t));
+     //uint16_t hashDataSize = GetHashByteCount(hasherObj);
+     //uint8_t *hashData = (uint8_t *) malloc(hashDataSize * sizeof(uint8_t));
      hasherObj->finalize(hashData, hashDataSize);
      return hashData;
 }

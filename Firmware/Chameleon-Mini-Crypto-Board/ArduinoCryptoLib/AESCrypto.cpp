@@ -10,24 +10,24 @@
 #include "AESCryptoCPP.cpp"
 
 volatile bool __CipherObjectMutex = false;
-AESCipher_t *__CipherObject = NULL;
+AESCipher_t __CipherObject;
 
 /* C++ versions of these functions: */
 AESCipher_t * CreateNewCipherObject() {
-     if(__CipherObject == NULL) {
-          __CipherObject = new AESCipher_t();
-     }
+     //if(__CipherObject == NULL) {
+     //     __CipherObject = new AESCipher_t();
+     //}
      if(__CipherObjectMutex) {
           return NULL;
      }
      __CipherObjectMutex = true;
-     return __CipherObject;
+     return &__CipherObject;
 }
 
 void DeleteCipherObject(AESCipher_t *cipher) {
-     if(cipher != NULL) {
-     	  free(cipher);
-     }
+     //if(cipher != NULL) {
+     //	  free(cipher);
+     //}
      __CipherObjectMutex = false;
 }
 
