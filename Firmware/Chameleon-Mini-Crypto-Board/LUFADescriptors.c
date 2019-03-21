@@ -209,10 +209,10 @@ const USB_Descriptor_String_t PROGMEM LanguageString =
  */
 const USB_Descriptor_String_t PROGMEM ManufacturerString =
 {
-    .Header                 = {.Size = USB_STRING_LEN(55), 
+    .Header                 = {.Size = USB_STRING_LEN(28), 
 	                       .Type = DTYPE_String},
 
-    .UnicodeString          = L"ParkLand/ToyFoundary/SimonY-MartinL -- Copyright \xA9 2019"
+    .UnicodeString          = L"ParkLink -- Copyright \xA9 2019"
 
 };
 
