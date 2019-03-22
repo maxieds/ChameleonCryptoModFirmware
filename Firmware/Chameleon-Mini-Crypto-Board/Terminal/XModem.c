@@ -143,7 +143,7 @@ bool XModemProcessByte(uint8_t Byte)
 
     case STATE_RECEIVE_DATA:
         /* Process byte and update checksum */
-        TerminalBufferIn[BufferIdx++] = Byte;
+        TerminalBufferOut[BufferIdx++] = Byte;
 
         if (BufferIdx == XMODEM_BLOCK_SIZE) {
             /* Block full */
@@ -156,9 +156,9 @@ bool XModemProcessByte(uint8_t Byte)
         if (ReceivedFrameNumber == CurrentFrameNumber) {
             /* This is the expected frame. Calculate and verify checksum */
 
-            if (CalcChecksum(TerminalBufferIn, XMODEM_BLOCK_SIZE) == Byte) {
+            if (CalcChecksum(TerminalBufferOut, XMODEM_BLOCK_SIZE) == Byte) {
                 /* Checksum is valid. Pass received data to callback function */
-                if (CallbackFunc(TerminalBufferIn, BlockAddress, XMODEM_BLOCK_SIZE)) {
+                if (CallbackFunc(TerminalBufferOut, BlockAddress, XMODEM_BLOCK_SIZE)) {
                     /* Proceed to next frame and send ACK */
                     CurrentFrameNumber++;
                     BlockAddress += XMODEM_BLOCK_SIZE;
@@ -207,12 +207,12 @@ bool XModemProcessByte(uint8_t Byte)
             /* Acknowledge. Proceed to next frame, get data and calc checksum */
             CurrentFrameNumber++;
 
-            if (CallbackFunc(TerminalBufferIn, BlockAddress, XMODEM_BLOCK_SIZE)) {
+            if (CallbackFunc(TerminalBufferOut, BlockAddress, XMODEM_BLOCK_SIZE)) {
                 TerminalSendByte(BYTE_SOH);
                 TerminalSendByte(CurrentFrameNumber);
                 TerminalSendByte(255 - CurrentFrameNumber);
-                TerminalSendBlock(TerminalBufferIn, XMODEM_BLOCK_SIZE);
-                TerminalSendByte(CalcChecksum(TerminalBufferIn, XMODEM_BLOCK_SIZE));
+                TerminalSendBlock(TerminalBufferOut, XMODEM_BLOCK_SIZE);
+                TerminalSendByte(CalcChecksum(TerminalBufferOut, XMODEM_BLOCK_SIZE));
 
                 BlockAddress += XMODEM_BLOCK_SIZE;
             } else {
@@ -224,8 +224,8 @@ bool XModemProcessByte(uint8_t Byte)
             TerminalSendByte(BYTE_SOH);
             TerminalSendByte(CurrentFrameNumber);
             TerminalSendByte(255 - CurrentFrameNumber);
-            TerminalSendBlock(TerminalBufferIn, XMODEM_BLOCK_SIZE);
-            TerminalSendByte(CalcChecksum(TerminalBufferIn, XMODEM_BLOCK_SIZE));
+            TerminalSendBlock(TerminalBufferOut, XMODEM_BLOCK_SIZE);
+            TerminalSendByte(CalcChecksum(TerminalBufferOut, XMODEM_BLOCK_SIZE));
         } else {
             /* Ignore other chars */
         }
@@ -284,7 +284,7 @@ void XModemTick(void)
 		MemoryUploadBlock((void *) (CryptoUploadBuffer + CRYPTO_UPLOAD_HEADER_SIZE), 0, 
 				  CryptoUploadBufferByteCount - CRYPTO_UPLOAD_HEADER_SIZE);
 		operationStatus = true;
-		SystemReset();
+		//SystemReset();
 	    }
 	    // cleanup data and free unused buffers:
 	    DecryptDumpAfterUpload = false;

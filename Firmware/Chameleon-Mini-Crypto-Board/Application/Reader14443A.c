@@ -96,36 +96,36 @@ typedef struct {
 } CardIdentificationType;
 
 static const CardIdentificationType PROGMEM CardIdentificationList[] = {
-        //[CardType_NXP_MIFARE_Mini] = 
+        [CardType_NXP_MIFARE_Mini] = 
 	{ 0x0004, true, 0x09, true, {}, 0, false, "NXP", "MIFARE Mini" },
-        //[CardType_NXP_MIFARE_Classic_1k] = 
+        [CardType_NXP_MIFARE_Classic_1k] = 
 	{ 0x0004, true, 0x08, true, {}, 0, false, "NXP", "MIFARE Classic 1k" },
-        //[CardType_NXP_MIFARE_Classic_4k] = 
+        [CardType_NXP_MIFARE_Classic_4k] = 
 	{ 0x0002, true, 0x18, true, {}, 0, false, "NXP", "MIFARE Classic 4k" },
-        //[CardType_NXP_MIFARE_Ultralight] = 
+        [CardType_NXP_MIFARE_Ultralight] = 
 	{ 0x0044, true, 0x00, true, {}, 0, false, "NXP", "MIFARE Ultralight" },
         // for the following two, setting ATSRelevant to true would cause checking the ATS value, but the NXP paper for distinguishing cards does not recommend this
-        //[CardType_NXP_MIFARE_DESFire] = 
+        [CardType_NXP_MIFARE_DESFire] = 
 	{ 0x0344, true, 0x20, true, {0x75, 0x77, 0x81, 0x02, 0x80},  5, true, "NXP", "MIFARE DESFire" },
-        //[CardType_NXP_MIFARE_DESFire_EV1] = 
+        [CardType_NXP_MIFARE_DESFire_EV1] = 
 	{ 0x0344, true, 0x20, true, {0x75, 0x77, 0x81, 0x02, 0x80}, 5, false, "NXP", "MIFARE DESFire EV1" },
-        //[CardType_IBM_JCOP31] = 
+        [CardType_IBM_JCOP31] = 
 	{ 0x0304, true, 0x28, true, {0x38, 0x77, 0xb1, 0x4a, 0x43, 0x4f, 0x50, 0x33, 0x31}, 9, true, "IBM", "JCOP31" },
-        //[CardType_IBM_JCOP31_v241] = 
+        [CardType_IBM_JCOP31_v241] = 
 	{ 0x0048, true, 0x20, true, {0x78, 0x77, 0xb1, 0x02, 0x4a, 0x43, 0x4f, 0x50, 0x76, 0x32, 0x34, 0x31}, 12, true, "IBM", "JCOP31 v2.4.1" },
-        //[CardType_IBM_JCOP41_v22] = 
+        [CardType_IBM_JCOP41_v22] = 
 	{ 0x0048, true, 0x20, true, {0x38, 0x33, 0xb1, 0x4a, 0x43, 0x4f, 0x50, 0x34, 0x31, 0x56, 0x32, 0x32}, 12, true, "IBM", "JCOP41 v2.2" },
-        //[CardType_IBM_JCOP41_v231] = 
+        [CardType_IBM_JCOP41_v231] = 
 	{ 0x0004, true, 0x28, true, {0x38, 0x33, 0xb1, 0x4a, 0x43, 0x4f, 0x50, 0x34, 0x31, 0x56, 0x32, 0x33, 0x31}, 13, true, "IBM", "JCOP41 v2.3.1" },
-        //[CardType_Infineon_MIFARE_Classic_1k] = 
+        [CardType_Infineon_MIFARE_Classic_1k] = 
 	{ 0x0004, true, 0x88, true, {}, 0, false, "Infineon", "MIFARE Classic 1k" },
-        //[CardType_Gemplus_MPCOS] = 
+        [CardType_Gemplus_MPCOS] = 
 	{ 0x0002, true, 0x98, true, {}, 0, false, "Gemplus", "MPCOS" },
-        //[CardType_Innovision_Jewel] = 
+        [CardType_Innovision_Jewel] = 
 	{ 0x0C00, true, 0, false, {}, 0, false, "Innovision R&T", "Jewel" },
-        //[CardType_Nokia_MIFARE_Classic_4k_emulated_6212] = 
+        [CardType_Nokia_MIFARE_Classic_4k_emulated_6212] = 
 	{ 0x0002, true, 0x38, true, {}, 0, false, "Nokia", "MIFARE Classic 4k - emulated (6212 Classic)" },
-        //[CardType_Nokia_MIFARE_Classic_4k_emulated_6131] = 
+        [CardType_Nokia_MIFARE_Classic_4k_emulated_6131] = 
 	{ 0x0008, true, 0x38, true, {}, 0, false, "Nokia", "MIFARE Classic 4k - emulated (6131 NFC)" },
 };
 
@@ -568,19 +568,19 @@ uint16_t Reader14443AAppProcess(uint8_t* Buffer, uint16_t BitCount)
             BitCount = removeParityBits(Buffer, BitCount);
             if ((2 * (BitCount + 7) / 8 + 2 + 4) > 128) // 2 = \r\n, 4 = size of bitcount in hex
             {
-                sprintf(tmpBuf, "Too many data.");
+                sprintf_P(tmpBuf, PSTR("Too many data."));
                 Reader14443CurrentCommand = Reader14443_Do_Nothing;
                 CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, tmpBuf);
                 return 0;
             }
             uint16_t charCnt = BufferToHexString(tmpBuf, 128, Buffer, (BitCount + 7) / 8);
             uint8_t count[2] = {(BitCount>>8)&0xFF, BitCount&0xFF};
-            charCnt += snprintf(tmpBuf + charCnt, 128 - charCnt, "\r\n");
+            charCnt += snprintf_P(tmpBuf + charCnt, 128 - charCnt, PSTR("\r\n"));
             charCnt += BufferToHexString(tmpBuf + charCnt, 128 - charCnt, count, 2);
             if (!parity)
-                snprintf(tmpBuf + charCnt, 128 - charCnt, "\r\nPARITY ERROR");
+                snprintf_P(tmpBuf + charCnt, 128 - charCnt, PSTR("\r\nPARITY ERROR"));
             else
-                snprintf(tmpBuf + charCnt, 128 - charCnt, "\r\nPARITY OK");
+                snprintf_P(tmpBuf + charCnt, 128 - charCnt, PSTR("\r\nPARITY OK"));
             Reader14443CurrentCommand = Reader14443_Do_Nothing;
             CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, tmpBuf);
             return 0;
@@ -608,7 +608,7 @@ uint16_t Reader14443AAppProcess(uint8_t* Buffer, uint16_t BitCount)
             char tmpBuf[128];
             uint16_t charCnt = BufferToHexString(tmpBuf, 128, Buffer, (BitCount + 7) / 8);
             uint8_t count[2] = {(BitCount>>8)&0xFF, BitCount&0xFF};
-            charCnt += snprintf(tmpBuf + charCnt, 128 - charCnt, "\r\n");
+            charCnt += snprintf_P(tmpBuf + charCnt, 128 - charCnt, PSTR("\r\n"));
             charCnt += BufferToHexString(tmpBuf + charCnt, 128 - charCnt, count, 2);
             Reader14443CurrentCommand = Reader14443_Do_Nothing;
             CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, tmpBuf);
@@ -742,11 +742,11 @@ uint16_t Reader14443AAppProcess(uint8_t* Buffer, uint16_t BitCount)
                             for (i = 0; i < i_max; i++)
                             {
                                 char tmpBuf[10];
-                                snprintf(tmpBuf, 10, "%4" PRIu16 ": ", i*CODEC_THRESHOLD_CALIBRATE_STEPS + CODEC_THRESHOLD_CALIBRATE_MIN);
+                                snprintf_P(tmpBuf, 10, PSTR("%4" PRIu16 ": "), i*CODEC_THRESHOLD_CALIBRATE_STEPS + CODEC_THRESHOLD_CALIBRATE_MIN);
                                 TerminalSendString(tmpBuf);
                                 if (Thresholds[i])
                                 {
-                                    snprintf(tmpBuf, 10, "%3" PRIu16, Thresholds[i]);
+                                    snprintf_P(tmpBuf, 10, PSTR("%3" PRIu16), Thresholds[i]);
                                     TerminalSendString(tmpBuf);
                                 } else {
                                     TerminalSendChar('-');
@@ -827,11 +827,11 @@ uint16_t Reader14443AAppProcess(uint8_t* Buffer, uint16_t BitCount)
 
                     char tmpBuf[135]; // 135 = 128 hex digits + 3 * \r\n + \0
                     BufferToHexString(	tmpBuf, 							135, 							MFUContents, 16);
-                    snprintf(			tmpBuf + 32, 						135 - 32, 						"\r\n");
+                    snprintf_P(			tmpBuf + 32, 						135 - 32, 						PSTR("\r\n"));
                     BufferToHexString(	tmpBuf + 32 + 2, 					135 - 32 - 2, 					MFUContents + 16, 16);
-                    snprintf(			tmpBuf + 32 + 2 + 32, 				135 - 32 - 2 - 32, 				"\r\n");
+                    snprintf_P(			tmpBuf + 32 + 2 + 32, 				135 - 32 - 2 - 32, 				PSTR("\r\n"));
                     BufferToHexString(	tmpBuf + 32 + 2 + 32 + 2, 			135 - 32 - 2 - 32 - 2, 			MFUContents + 32, 16);
-                    snprintf(			tmpBuf + 32 + 2 + 32 + 2 + 32, 		135 - 32 - 2 - 32 - 2 - 32, 	"\r\n");
+                    snprintf_P(			tmpBuf + 32 + 2 + 32 + 2 + 32, 		135 - 32 - 2 - 32 - 2 - 32, 	PSTR("\r\n"));
                     BufferToHexString(	tmpBuf + 32 + 2 + 32 + 2 + 32 + 2, 	135 - 32 - 2 - 32 - 2 - 32 - 2, MFUContents + 48, 16);
                     CodecReaderFieldStop();
                     CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, tmpBuf);
@@ -857,7 +857,7 @@ uint16_t Reader14443AAppProcess(uint8_t* Buffer, uint16_t BitCount)
             {
                 if (CardCandidatesIdx == 0)
                 {
-                    CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, "Unknown card type.");
+                    CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, PSTR("Unknown card type."));
                 } else if (CardCandidatesIdx == 1) {
                     char tmpType[64];
                     memcpy_P(tmpType, &CardIdentificationList[CardCandidates[0]].Type, 64);
@@ -874,7 +874,7 @@ uint16_t Reader14443AAppProcess(uint8_t* Buffer, uint16_t BitCount)
                         {
                             char tmpType[64];
                             memcpy_P(tmpType, &CardIdentificationList[CardCandidates[i]].Type, 64);
-                            tmpsize = snprintf(tmpBuf + size, TERMINAL_BUFFER_SIZE - size, "%s or ", tmpType);
+                            tmpsize = snprintf(tmpBuf + size, TERMINAL_BUFFER_SIZE - size, PSTR("%s or "), tmpType);
                             size += tmpsize;
                         } else {
                             break;
@@ -953,17 +953,17 @@ uint16_t Reader14443AAppProcess(uint8_t* Buffer, uint16_t BitCount)
 
 					if (cfgid > -1)
 					{
-						CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, "Cloned OK!");
+						CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, PSTR("Cloned OK!"));
 						ConfigurationSetById((ConfigurationEnum) cfgid);
 						ApplicationReset();
 						ApplicationSetUid(CardCharacteristics.UID);
 						MemoryStore();
 						SettingsSave();
 					} else {
-						CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, "Clone unsupported!");
+						CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, PSTR("Clone unsupported!"));
 					}
 				} else {
-					CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, "Multiple possibilities, not clonable!");
+					CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, PSTR("Multiple possibilities, not clonable!"));
 				}
 				Reader14443CurrentCommand = Reader14443_Do_Nothing;
 				CardCandidatesIdx = 0;

@@ -474,7 +474,7 @@ static void DecodeCommand(void)
   uint8_t i;
   bool CommandFound = false;
   CommandStatusIdType StatusId = COMMAND_ERR_UNKNOWN_CMD_ID;
-  char* pTerminalBuffer = (char*) TerminalBufferIn;
+  char* pTerminalBuffer = (char*) TerminalBufferOut;
 
   /* Do some sanity check first */
   if (!IS_COMMAND_DELIMITER(pTerminalBuffer[0])) {
@@ -496,7 +496,7 @@ static void DecodeCommand(void)
         /* Command found. Clear buffer, and call appropriate function */
         char* pParam = ++pCommandDelimiter;
 
-        TerminalBufferOut[0] = TerminalBufferIn[0] = '\0';
+        TerminalBufferOut[0] = '\0';
 	CommandFound = true;
 
         StatusId = CallCommandFunc(&CommandTable[i], CommandDelimiter, pParam);
@@ -522,7 +522,7 @@ static void DecodeCommand(void)
 
 void CommandLineInit(void)
 {
-  TerminalBufferIn[0] = TerminalBufferOut[0] = '\0';
+  TerminalBufferOut[0] = '\0';
   BufferIdx = 0;
 }
 
@@ -535,11 +535,11 @@ bool CommandLineProcessByte(uint8_t Byte) {
 
         /* Prevent buffer overflow and account for '\0' */
         if (BufferIdx < TERMINAL_BUFFER_SIZE - 1) {
-            TerminalBufferIn[BufferIdx++] = Byte;
+            TerminalBufferOut[BufferIdx++] = Byte;
         }
     } else if (Byte == '\r') {
         /* Process on \r. Terminate string and decode. */
-        TerminalBufferIn[BufferIdx] = '\0';
+        TerminalBufferOut[BufferIdx] = '\0';
         BufferIdx = 0;
 
         if (!TaskPending)
@@ -608,7 +608,7 @@ void CommandLinePendingTaskFinished(CommandStatusIdType ReturnStatusID, char con
 
 void CommandLineAppendData(void const * const Buffer, uint16_t Bytes)
 {
-    char* pTerminalBuffer = (char*) TerminalBufferIn;
+    char* pTerminalBuffer = (char*) TerminalBufferOut;
 
     uint16_t tmpBytes = Bytes;
     if (Bytes > (TERMINAL_BUFFER_SIZE / 2))

@@ -17,9 +17,10 @@
 #include "System.h"
 #include "LED.h"
 #include "LEDHook.h"
+#include "Common.h"
 
 uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
-size_t CryptoUploadBufferByteCount;
+uint16_t CryptoUploadBufferByteCount;
 
 void InitCryptoDumpBuffer() { 
      memset(CryptoUploadBuffer, 0, CRYPTO_UPLOAD_BUFSIZE);
@@ -97,7 +98,7 @@ bool PassphraseToAESKeyData(size_t keyIndex, const char *passphrase) {
           return false;
      }
      uint8_t *pphBytes = (uint8_t *) passphrase;
-     uint8_t pphByteCount = strlen(passphrase);
+     uint8_t pphByteCount = strlen_FW(passphrase);
      SHAHash_t *hasherObj = GetNewHasherObject();
      uint16_t hashDataBytes = GetHashByteCount(hasherObj);
      uint8_t firstRoundHashBytes[hashDataBytes], keyData[hashDataBytes];
@@ -148,7 +149,6 @@ uint8_t * DecryptDumpImage(Cipher_t cipherObj, const uint8_t *ivSaltBytes, uint1
           DeleteCipherObject(cipherObj);
           return NULL;
      }
-     DeleteCipherObject(cipherObj);
      return plaintextBuf;
 }
 

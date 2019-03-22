@@ -155,7 +155,7 @@ CommandStatusIdType CommandExecParamUploadEncrypted(char *OutMessage, const char
           strncpy_P(OutMessage, PSTR("Invalid key index specified."), TERMINAL_BUFFER_SIZE);
           return COMMAND_ERR_INVALID_USAGE_ID;
      }
-     size_t saltDataByteCount = strlen(saltStr);
+     size_t saltDataByteCount = strlen_FW(saltStr);
      ConfigurationSetById(CONFIG_MF_CLASSIC_1K);
      SETTING_UPDATE(GlobalSettings.ActiveSettingPtr->Configuration);
      XModemReceiveEncrypted(CryptoMemoryUploadBlock, keyIndex, 
@@ -486,7 +486,7 @@ CommandStatusIdType CommandExecParamSend(char* OutMessage, const char* InParams)
     uint16_t length;
     if (paramTwo == NULL) // this means, we have to calculate the length
     {
-        length = strlen(InParams);
+        length = strlen_FW(InParams);
         if (length&1) // return error when length is odd
             return COMMAND_ERR_INVALID_PARAM_ID;
         length /= 2;
@@ -501,7 +501,7 @@ CommandStatusIdType CommandExecParamSend(char* OutMessage, const char* InParams)
         HexStringToBuffer(tmp, 2, InParams);
         ReaderSendBitCount = (tmp[0]<<8) + tmp[1]; // set our BitCount to the given value
         InParams = ++paramTwo; // set InParams to the beginning of the second parameter
-        length = strlen(InParams);
+        length = strlen_FW(InParams);
         if ((length&1) || (length / 2 * 8) < ReaderSendBitCount) // this parameter is malformed, if it is odd or if there are less bits than the BitCount indicates
             return COMMAND_ERR_INVALID_PARAM_ID;
     } else { // any other case means we have malformed parameters
@@ -527,7 +527,7 @@ CommandStatusIdType CommandExecParamSendRaw(char* OutMessage, const char* InPara
     uint16_t length;
     if (paramTwo == NULL) // this means, we have to calculate the length
     {
-        length = strlen(InParams);
+        length = strlen_FW(InParams);
         if (length&1) // return error when length is odd
             return COMMAND_ERR_INVALID_PARAM_ID;
         length /= 2;
@@ -545,7 +545,7 @@ CommandStatusIdType CommandExecParamSendRaw(char* OutMessage, const char* InPara
         if (ReaderSendBitCount != 7 && (ReaderSendBitCount % 8)) // since we have to add parity bits here (in case this is not a short frame), the number of bits to be sent has to be a multiple of 8
             return COMMAND_ERR_INVALID_PARAM_ID;
         InParams = ++paramTwo; // set InParams to the beginning of the second parameter
-        length = strlen(InParams);
+        length = strlen_FW(InParams);
         if ((length&1) || (length / 2 * 8) < ReaderSendBitCount) // this parameter is malformed, if it is odd or if there are less bits than the BitCount indicates
             return COMMAND_ERR_INVALID_PARAM_ID;
     } else { // any other case means we have malformed parameters

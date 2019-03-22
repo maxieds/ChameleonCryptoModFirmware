@@ -25,7 +25,7 @@ int PassphraseHashCompare(const char *passphrase, const char *storedHashString);
 
 INLINE bool AuthLockByPassphrase(const char *authPwd) { 
      if(authPwd == NULL || 
-	PassphraseHashCompare(authPwd, DEFAULT_FLASH_LOCK_PASSPHRASE)) {
+	PassphraseHashCompare(authPwd, PSTR(DEFAULT_FLASH_LOCK_PASSPHRASE))) {
           return false;
      }
      return true;

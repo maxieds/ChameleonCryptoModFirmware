@@ -151,7 +151,7 @@ uint16_t Sniff14443AAppProcess(uint8_t* Buffer, uint16_t BitCount){
                             CommandLinePendingTaskFinished(COMMAND_INFO_OK_WITH_TEXT_ID, NULL);
                             // Send this threshold to terminal
                             char tmpBuf[10];
-                            snprintf(tmpBuf, 10, "%4" PRIu16 ": ", tmp_th);
+                            snprintf_P(tmpBuf, 10, PSTR("%4" PRIu16 ": "), tmp_th);
                             TerminalSendString(tmpBuf);
 
                             // Save value to EEPROM

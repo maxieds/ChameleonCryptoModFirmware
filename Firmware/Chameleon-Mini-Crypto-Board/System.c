@@ -28,6 +28,7 @@ ISR(RTC_OVF_vect)
 
 void SystemInit(void)
 {
+    __malloc_heap_end = 0;
     if (RST.STATUS & RST_WDRF_bm) {
         /* On Watchdog reset clear WDRF bit, disable watchdog
          * and jump into bootloader */

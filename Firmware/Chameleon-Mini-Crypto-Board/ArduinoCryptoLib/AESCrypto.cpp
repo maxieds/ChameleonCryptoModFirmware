@@ -25,9 +25,10 @@ AESCipher_t * CreateNewCipherObject() {
 }
 
 void DeleteCipherObject(AESCipher_t *cipher) {
-     //if(cipher != NULL) {
-     //	  free(cipher);
-     //}
+     if(cipher != NULL) {
+     	  cipher->clear();
+          //free(cipher);
+     }
      __CipherObjectMutex = false;
 }
 

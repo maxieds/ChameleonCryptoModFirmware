@@ -31,7 +31,7 @@ USB_ClassInfo_CDC_Device_t TerminalHandle = {
     }
 };
 
-uint8_t TerminalBufferIn[TERMINAL_BUFFER_SIZE]; 
+//uint8_t TerminalBufferIn[TERMINAL_BUFFER_SIZE]; 
 uint8_t TerminalBufferOut[TERMINAL_BUFFER_SIZE]; 
 TerminalStateEnum TerminalState = TERMINAL_UNINITIALIZED;
 static uint8_t TerminalInitDelay = INIT_DELAY;
@@ -113,7 +113,7 @@ static void SenseVBus(void)
 void TerminalInit(void)
 {
     TERMINAL_VBUS_PORT.DIRCLR = TERMINAL_VBUS_MASK;
-    TerminalBufferIn[0] = TerminalBufferOut[0] = '\0';
+    TerminalBufferOut[0] = '\0';
 }
 
 void TerminalTask(void)

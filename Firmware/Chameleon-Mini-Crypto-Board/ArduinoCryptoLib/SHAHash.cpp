@@ -21,9 +21,10 @@ SHAHash_t * GetNewHasherObject() {
 }
 
 void DeleteHasherObject(SHAHash_t *hasherObj) { 
-     //if(hasherObj != NULL) { 
-     //     free(hasherObj);
-     //}
+     if(hasherObj != NULL) { 
+          //free(hasherObj);
+	  hasherObj->reset();
+     }
      __SHAHasherObjectMutex = false;
 }
 
@@ -33,17 +34,7 @@ uint8_t * ComputeHashBytes(SHAHash_t *hasherObj, uint8_t *hashData,
      if(hasherObj == NULL || hashData == NULL || dataBytes == NULL) {
           return NULL;
      }
-     //hasherObj->clear();
-     /*size_t roundSize = 64;
-     uint16_t numRounds = dataByteCount / roundSize + ((dataByteCount % roundSize) ? 1 : 0);
-     for(int r = 0; r < numRounds; r++) { 
-	  size_t curRoundProcessSize = ((dataByteCount % roundSize) && r == (numRounds - 1)) ? 
-		                       dataByteCount % roundSize : roundSize;
-          hasherObj->update(dataBytes + r * roundSize, curRoundProcessSize);
-     }*/
      hasherObj->update(dataBytes, dataByteCount);
-     //uint16_t hashDataSize = GetHashByteCount(hasherObj);
-     //uint8_t *hashData = (uint8_t *) malloc(hashDataSize * sizeof(uint8_t));
      hasherObj->finalize(hashData, hashDataSize);
      return hashData;
 }

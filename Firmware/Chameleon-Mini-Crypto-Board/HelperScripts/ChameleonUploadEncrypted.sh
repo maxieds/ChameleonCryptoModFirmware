@@ -29,6 +29,7 @@ SZCMD=`which sx`
 
 stty -F $CHAMELEON_DEV 115200 cs8 -cstopb -parenb # 9600 #cs8 -parenb -cstopb -ixon
 echo -en "UPLOAD_ENCRYPTED ${KEY_INDEX} ${TIMESTAMP_SALT}\r" > $CHAMELEON_DEV;
+#sleep 2;
 read -t 4 NoVar < $CHAMELEON_DEV;
 echo " >> Chameleon Response: $NoVar"
 $SZCMD -b -vvv -X $DUMP_IMAGE < $CHAMELEON_DEV > $CHAMELEON_DEV

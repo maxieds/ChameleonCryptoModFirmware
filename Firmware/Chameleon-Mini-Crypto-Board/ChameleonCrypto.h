@@ -43,7 +43,7 @@ typedef struct {
  * variables, we carve out a special one-time placeholder for this buffer data in the EEPROM segment: 
  */
 extern uint8_t CryptoUploadBuffer[CRYPTO_UPLOAD_BUFSIZE];
-extern size_t CryptoUploadBufferByteCount;
+extern uint16_t CryptoUploadBufferByteCount;
 
 /* Administrative checking and prep routines: */
 void InitCryptoDumpBuffer();

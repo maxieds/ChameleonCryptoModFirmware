@@ -6,7 +6,7 @@ LIBRARY = libAESCryptoLinux.a
 CXX=g++
 HOSTARCH_FLAGS= -march=$(shell uname -m | tr "_" "-") -DLINUX_HOST_BUILD
 CPPFLAGS = -I$(shell readlink -f .)
-CXXFLAGS = -g -Wall $(CPPFLAGS) $(HOSTARCH_FLAGS)
+CXXFLAGS = -Wall $(CPPFLAGS) $(HOSTARCH_FLAGS)
 
 SOURCES = \
 	AESCrypto/AES128.cpp \
