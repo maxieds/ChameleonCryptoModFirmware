@@ -15,7 +15,7 @@ Chameleon RevG board firmware EEPROM. A significant change effectively "upgradin
 source from C to C++ has been made in the code contained in this repository. This change was 
 necessary to support the C++-based 
 [Arduino Crypto Library](http://rweather.github.io/arduinolibs/crypto.html) 
-which was requested by Simon Yorkston as a part of the original project spec to ease the coding 
+as a part of the original project spec to ease the coding 
 requirements of handling the new cryptographic routines within our source code. 
 
 ## List of primary modifications to the firmware
