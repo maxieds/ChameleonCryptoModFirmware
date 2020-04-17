@@ -6,11 +6,7 @@ The [ChameleonCryptoModFIrmware project](https://github.com/maxieds/ChameleonCry
 a custom modification of the 
 [Chameleon Mini (RevG) firmware](https://github.com/emsec/ChameleonMini) distribution created by 
 [Maxie D. Schmidt](https://github.com/maxieds) 
-on behalf of a private project financed by Simon Yorkston and Martin Lore. 
-The developer believes that these modifications could eventually be incorporated into the main 
-firmware sources. The code contained in this private repository is financed, and hence subject to the 
-existing licensing of this derivative code base, the property of Simon Yorkston and Martin Lore 
-via their private *PARKLINK* (*Toy Foundary*) company. 
+on behalf of private project funding. 
 
 The primary modification of the existing Chameleon Mini firmware sources is made to support loading 
 of encrypted *MIFARE_CLASSIC_1K* dump images. This modification to the source then also includes 
